@@ -18,3 +18,14 @@ export const VEHICULE_TYPE_LABELS: Record<VehiculeType, string> = {
   auto: "Automobile",
   moto: "Moto",
 };
+
+const MIN_VEHICULE_YEAR = 1980;
+const MAX_VEHICULE_YEAR = 2030;
+
+export function isValidVehiculeYear(year: number): boolean {
+  return (
+    Number.isInteger(year) &&
+    year >= MIN_VEHICULE_YEAR &&
+    year <= MAX_VEHICULE_YEAR
+  );
+}

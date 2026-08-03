@@ -25,6 +25,7 @@ create table vehicules (
   numero_chassis text,
   marque text,
   modele text,
+  annee smallint check (annee is null or (annee >= 1980 and annee <= 2100)),
   genre text,
   energie text,
   puissance_fiscale int,

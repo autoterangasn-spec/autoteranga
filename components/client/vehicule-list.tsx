@@ -67,6 +67,8 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Immatriculation</TableHead>
+              <TableHead>Marque / Modèle</TableHead>
+              <TableHead>Année</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Carte grise</TableHead>
               <TableHead>Ajouté le</TableHead>
@@ -79,6 +81,12 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
                 <TableCell className="font-medium">
                   {vehicule.immatriculation}
                 </TableCell>
+                <TableCell>
+                  {vehicule.marque || vehicule.modele
+                    ? [vehicule.marque, vehicule.modele].filter(Boolean).join(" ")
+                    : "—"}
+                </TableCell>
+                <TableCell>{vehicule.annee ?? "—"}</TableCell>
                 <TableCell>
                   {vehicule.type ? (
                     <Badge variant="secondary">

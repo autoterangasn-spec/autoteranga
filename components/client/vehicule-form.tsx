@@ -56,8 +56,9 @@ export function VehiculeForm() {
       <CardHeader>
         <CardTitle>Enregistrer un véhicule</CardTitle>
         <CardDescription>
-          Saisissez l&apos;immatriculation sénégalaise (ex. AA-617-SE) et
-          téléversez la carte grise.
+          Saisissez les informations du véhicule (marque, modèle, année),
+          l&apos;immatriculation sénégalaise (ex. AA-617-SE) et téléversez la
+          carte grise.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -72,6 +73,45 @@ export function VehiculeForm() {
               <AlertDescription>{success}</AlertDescription>
             </Alert>
           )}
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="marque">Marque</Label>
+              <Input
+                id="marque"
+                name="marque"
+                placeholder="Toyota"
+                required
+                disabled={isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="modele">Modèle</Label>
+              <Input
+                id="modele"
+                name="modele"
+                placeholder="Prado Land Cruiser"
+                required
+                disabled={isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="annee">Année</Label>
+              <Input
+                id="annee"
+                name="annee"
+                type="number"
+                min={1980}
+                max={2030}
+                step={1}
+                placeholder="2019"
+                pattern="\d{4}"
+                title="Année à 4 chiffres (1980–2030)"
+                required
+                disabled={isPending}
+              />
+            </div>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -100,6 +140,31 @@ export function VehiculeForm() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optionnel)</Label>
+            <textarea
+              id="description"
+              name="description"
+              rows={3}
+              placeholder="Diesel manuel climatisé, 4 cylindres, en bon état…"
+              disabled={isPending}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="prix_achat">Prix d&apos;achat (FCFA, optionnel)</Label>
+            <Input
+              id="prix_achat"
+              name="prix_achat"
+              type="number"
+              min={0}
+              step={1}
+              placeholder="12000000"
+              disabled={isPending}
+            />
           </div>
 
           <div className="space-y-2">

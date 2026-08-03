@@ -37,6 +37,10 @@ ALTER TABLE public.vehicules
   ADD COLUMN IF NOT EXISTS type text
   CHECK (type IS NULL OR type IN ('auto', 'moto'));
 
+ALTER TABLE public.vehicules
+  ADD COLUMN IF NOT EXISTS annee smallint
+  CHECK (annee IS NULL OR (annee >= 1980 AND annee <= 2100));
+
 -- ---------------------------------------------------------------------------
 -- 3. Helpers RLS
 -- ---------------------------------------------------------------------------

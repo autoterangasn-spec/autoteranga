@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfileForAuthUser } from "@/lib/supabase/profile";
 import {
   isValidImmatriculation,
+  isValidVehiculeYear,
   normalizeImmatriculation,
   type VehiculeType,
 } from "@/lib/vehicules";
@@ -62,11 +63,41 @@ export async function createVehicule(formData: FormData): Promise<ActionResult<V
   }
 
   const rawImmat = String(formData.get("immatriculation") ?? "").trim();
+  const marque = String(formData.get("marque") ?? "").trim();
+  const modele = String(formData.get("modele") ?? "").trim();
+  const rawAnnee = String(formData.get("annee") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const rawPrixAchat = String(formData.get("prix_achat") ?? "").trim();
   const type = String(formData.get("type") ?? "") as VehiculeType;
   const file = formData.get("carte_grise") as File | null;
 
   if (!rawImmat) {
     return { error: "L'immatriculation est obligatoire." };
+  }
+
+  if (!marque) {
+    return { error: "La marque est obligatoire." };
+  }
+
+  if (!modele) {
+    return { error: "Le modèle est obligatoire." };
+  }
+
+  if (!rawAnnee) {
+    return { error: "L'année est obligatoire." };
+  }
+
+  const annee = Number.parseInt(rawAnnee, 10);
+  if (!/^\d{4}$/.test(rawAnnee) || !isValidVehiculeYear(annee)) {
+    return { error: "Année invalide (4 chiffres, ex. 2019)." };
+  }
+
+  let prix_achat: number | null = null;
+  if (rawPrixAchat) {
+    prix_achat = Number.parseInt(rawPrixAchat.replace(/\s/g, ""), 10);
+    if (!Number.isInteger(prix_achat) || prix_achat < 0) {
+      return { error: "Prix d'achat invalide (montant en FCFA)." };
+    }
   }
 
   if (!isValidImmatriculation(rawImmat)) {
@@ -113,6 +144,11 @@ export async function createVehicule(formData: FormData): Promise<ActionResult<V
     .insert({
       user_id: profile.id,
       immatriculation,
+      marque,
+      modele,
+      annee,
+      description,
+      prix_achat,
       type,
       carte_grise_url: storagePath,
     })

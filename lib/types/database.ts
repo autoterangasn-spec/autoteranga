@@ -33,6 +33,9 @@ export interface Vehicule {
   numero_chassis: string | null;
   marque: string | null;
   modele: string | null;
+  annee: number | null;
+  description: string | null;
+  prix_achat: number | null;
   genre: string | null;
   energie: string | null;
   puissance_fiscale: number | null;

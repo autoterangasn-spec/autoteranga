@@ -124,6 +124,10 @@ export default async function PoliceDetailPage({
             />
             <InfoRow label="Marque" value={vehicule?.marque ?? "—"} />
             <InfoRow label="Modèle" value={vehicule?.modele ?? "—"} />
+            <InfoRow
+              label="Année"
+              value={vehicule?.annee ? String(vehicule.annee) : "—"}
+            />
             <InfoRow label="Genre" value={vehicule?.genre ?? "—"} />
             <InfoRow label="Énergie" value={vehicule?.energie ?? "—"} />
           </CardContent>

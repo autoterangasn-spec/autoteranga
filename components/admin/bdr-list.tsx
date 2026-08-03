@@ -16,24 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MOIS_LABELS } from "@/lib/constants/bdr";
 import type { BordereauReglement } from "@/lib/types/database";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import Link from "next/link";
-
-const MOIS_LABELS = [
-  "Janvier",
-  "Février",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Septembre",
-  "Octobre",
-  "Novembre",
-  "Décembre",
-];
 
 function statutBadge(statut: BordereauReglement["statut"]) {
   switch (statut) {
@@ -152,5 +138,3 @@ export function BdrList({ bordereaux }: BdrListProps) {
     </div>
   );
 }
-
-export { MOIS_LABELS };

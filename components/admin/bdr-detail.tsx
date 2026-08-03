@@ -2,8 +2,6 @@
 
 import { useRef, useState } from "react";
 import { Download, ExternalLink, Loader2, Send, Upload } from "lucide-react";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 
 import {
   getAvisRecetteSignedUrl,
@@ -21,10 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatBdrPeriode } from "@/lib/constants/bdr";
 import type { BordereauLigne, BordereauReglement } from "@/lib/types/database";
 import { formatCurrency, formatDate } from "@/lib/utils";
-
-import { MOIS_LABELS } from "./bdr-list";
 
 function formatMoyenPaiement(moyen: BordereauLigne["moyen_paiement"]): string {
   if (moyen === "wave") return "WAVE";
@@ -47,9 +44,14 @@ export function BdrDetail({ bordereau, lignes }: BdrDetailProps) {
   const totalAReverserAskia = bordereau.total_primes;
   const commissionDue = bordereau.total_commission;
 
-  function exportPdf() {
+  async function exportPdf() {
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
+
     const doc = new jsPDF({ orientation: "landscape" });
-    const periode = `${MOIS_LABELS[bordereau.mois - 1]} ${bordereau.annee}`;
+    const periode = formatBdrPeriode(bordereau.mois, bordereau.annee);
 
     doc.setFontSize(16);
     doc.text("Bordereau de règlement — Autoteranga / Askia", 14, 18);
@@ -79,8 +81,9 @@ export function BdrDetail({ bordereau, lignes }: BdrDetailProps) {
       ]),
     });
 
-    const finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } })
-      .lastAutoTable?.finalY ?? 38;
+    const finalY =
+      (doc as InstanceType<typeof jsPDF> & { lastAutoTable?: { finalY: number } })
+        .lastAutoTable?.finalY ?? 38;
 
     doc.setFontSize(11);
     doc.text(

@@ -10,6 +10,14 @@ export function formatCurrency(amount: number | null | undefined): string {
   return new Intl.NumberFormat("fr-FR").format(amount) + " FCFA";
 }
 
+/** PDF-safe currency: strips thousand separators that jsPDF renders incorrectly. */
+export function formatCurrencyForPdf(amount: number | null | undefined): string {
+  if (amount == null) return "—";
+  const formatted = new Intl.NumberFormat("fr-FR").format(amount);
+  const pdfSafe = formatted.replace(/[\u202f\u00a0\s]/g, "");
+  return `${pdfSafe} FCFA`;
+}
+
 export function formatDate(date: string | null | undefined): string {
   if (!date) return "—";
   const parsed = new Date(date);

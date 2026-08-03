@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { formatBdrPeriode } from "@/lib/constants/bdr";
 import type { BordereauLigne, BordereauReglement } from "@/lib/types/database";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatCurrencyForPdf, formatDate } from "@/lib/utils";
 
 function formatMoyenPaiement(moyen: BordereauLigne["moyen_paiement"]): string {
   if (moyen === "wave") return "WAVE";
@@ -74,10 +74,10 @@ export function BdrDetail({ bordereau, lignes }: BdrDetailProps) {
       body: lignes.map((l) => [
         l.n_police,
         l.immatriculation,
-        formatCurrency(l.montant_prime),
+        formatCurrencyForPdf(l.montant_prime),
         formatDate(l.date_souscription),
         formatMoyenPaiement(l.moyen_paiement),
-        formatCurrency(l.commission),
+        formatCurrencyForPdf(l.commission),
       ]),
     });
 
@@ -87,12 +87,12 @@ export function BdrDetail({ bordereau, lignes }: BdrDetailProps) {
 
     doc.setFontSize(11);
     doc.text(
-      `Total à reverser Askia : ${formatCurrency(totalAReverserAskia)}`,
+      `Total à reverser Askia : ${formatCurrencyForPdf(totalAReverserAskia)}`,
       14,
       finalY + 12
     );
     doc.text(
-      `Commission Autoteranga due : ${formatCurrency(commissionDue)}`,
+      `Commission Autoteranga due : ${formatCurrencyForPdf(commissionDue)}`,
       14,
       finalY + 20
     );

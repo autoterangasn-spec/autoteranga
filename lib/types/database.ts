@@ -41,6 +41,7 @@ export interface Vehicule {
   puissance_fiscale: number | null;
   nombre_places: number | null;
   carte_grise_url: string | null;
+  photos_urls: string[] | null;
   created_at: string;
 }
 

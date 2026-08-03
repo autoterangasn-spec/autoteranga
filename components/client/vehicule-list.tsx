@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 
-import { deleteVehicule, getCarteGriseSignedUrl } from "@/app/actions/vehicules";
+import {
+  deleteVehicule,
+  getCarteGriseSignedUrl,
+  getVehiculePhotoSignedUrl,
+} from "@/app/actions/vehicules";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +24,37 @@ import type { Vehicule } from "@/lib/types/database";
 
 interface VehiculeListProps {
   vehicules: Vehicule[];
+}
+
+function VehiculePhotoThumb({ storagePath }: { storagePath: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getVehiculePhotoSignedUrl(storagePath).then((result) => {
+      if (!cancelled && result.data) {
+        setUrl(result.data);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storagePath]);
+
+  if (!url) {
+    return <span className="text-xs text-muted-foreground">…</span>;
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt="Photo du véhicule"
+      className="h-12 w-16 rounded object-cover"
+    />
+  );
 }
 
 export function VehiculeList({ vehicules }: VehiculeListProps) {
@@ -66,6 +101,7 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[72px]">Photo</TableHead>
               <TableHead>Immatriculation</TableHead>
               <TableHead>Marque / Modèle</TableHead>
               <TableHead>Année</TableHead>
@@ -76,59 +112,74 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {vehicules.map((vehicule) => (
-              <TableRow key={vehicule.id}>
-                <TableCell className="font-medium">
-                  {vehicule.immatriculation}
-                </TableCell>
-                <TableCell>
-                  {vehicule.marque || vehicule.modele
-                    ? [vehicule.marque, vehicule.modele].filter(Boolean).join(" ")
-                    : "—"}
-                </TableCell>
-                <TableCell>{vehicule.annee ?? "—"}</TableCell>
-                <TableCell>
-                  {vehicule.type ? (
-                    <Badge variant="secondary">
-                      {VEHICULE_TYPE_LABELS[vehicule.type]}
-                    </Badge>
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-                <TableCell>
-                  {vehicule.carte_grise_url ? (
-                    <Button
-                      variant="link"
-                      className="h-auto p-0"
-                      onClick={() =>
-                        handleViewCarteGrise(vehicule.carte_grise_url!)
-                      }
-                    >
-                      Voir le document
-                    </Button>
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-                <TableCell>{formatDate(vehicule.created_at)}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={isPending && pendingId === vehicule.id}
-                    onClick={() => handleDelete(vehicule.id)}
-                    aria-label="Supprimer"
-                  >
-                    {isPending && pendingId === vehicule.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+            {vehicules.map((vehicule) => {
+              const mainPhoto = vehicule.photos_urls?.[0];
+
+              return (
+                <TableRow key={vehicule.id}>
+                  <TableCell>
+                    {mainPhoto ? (
+                      <VehiculePhotoThumb storagePath={mainPhoto} />
                     ) : (
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <span className="text-xs text-muted-foreground">—</span>
                     )}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {vehicule.immatriculation}
+                  </TableCell>
+                  <TableCell>
+                    {vehicule.marque || vehicule.modele
+                      ? [vehicule.marque, vehicule.modele]
+                          .filter(Boolean)
+                          .join(" ")
+                      : "—"}
+                  </TableCell>
+                  <TableCell>{vehicule.annee ?? "—"}</TableCell>
+                  <TableCell>
+                    {vehicule.type ? (
+                      <Badge variant="secondary">
+                        {VEHICULE_TYPE_LABELS[vehicule.type]}
+                      </Badge>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {vehicule.carte_grise_url ? (
+                      <Button
+                        variant="link"
+                        className="h-auto p-0"
+                        onClick={() =>
+                          handleViewCarteGrise(vehicule.carte_grise_url!)
+                        }
+                      >
+                        Voir le document
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Non fournie
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>{formatDate(vehicule.created_at)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={isPending && pendingId === vehicule.id}
+                      onClick={() => handleDelete(vehicule.id)}
+                      aria-label="Supprimer"
+                    >
+                      {isPending && pendingId === vehicule.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      )}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

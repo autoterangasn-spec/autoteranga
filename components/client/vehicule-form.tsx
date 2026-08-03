@@ -56,9 +56,10 @@ export function VehiculeForm() {
       <CardHeader>
         <CardTitle>Enregistrer un véhicule</CardTitle>
         <CardDescription>
-          Saisissez les informations du véhicule (marque, modèle, année),
-          l&apos;immatriculation sénégalaise (ex. AA-617-SE) et téléversez la
-          carte grise.
+          Pour une annonce de vente ou de location, renseignez marque, modèle,
+          année et photos — la carte grise n&apos;est pas obligatoire. Pour une
+          souscription assurance, la carte grise vous sera demandée à
+          l&apos;étape devis.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -155,7 +156,7 @@ export function VehiculeForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="prix_achat">Prix d&apos;achat (FCFA, optionnel)</Label>
+            <Label htmlFor="prix_achat">Prix (FCFA, optionnel)</Label>
             <Input
               id="prix_achat"
               name="prix_achat"
@@ -165,18 +166,46 @@ export function VehiculeForm() {
               placeholder="12000000"
               disabled={isPending}
             />
+            <p className="text-sm text-muted-foreground">
+              Indiquez le prix de vente ou de location mensuelle pour votre
+              annonce.
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="carte_grise">Carte grise (PDF ou image)</Label>
+            <Label htmlFor="photos">Photos du véhicule</Label>
+            <Input
+              id="photos"
+              name="photos"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              disabled={isPending}
+            />
+            <p className="text-sm text-muted-foreground">
+              Ajoutez une ou plusieurs photos (JPEG, PNG ou WebP, max 5 Mo
+              chacune). Recommandé pour les annonces vente/location — comme sur
+              Facebook Marketplace.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="carte_grise">
+              Carte grise (optionnel — requis uniquement pour la souscription
+              assurance)
+            </Label>
             <Input
               id="carte_grise"
               name="carte_grise"
               type="file"
               accept=".pdf,image/jpeg,image/png,image/webp"
-              required
               disabled={isPending}
             />
+            <p className="text-sm text-muted-foreground">
+              Vous pouvez publier une annonce sans carte grise : les photos
+              suffisent pour la vente ou la location. La carte grise ne sera
+              demandée que lors de la souscription assurance (étape devis).
+            </p>
           </div>
 
           <Button type="submit" disabled={isPending}>

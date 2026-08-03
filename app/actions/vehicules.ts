@@ -13,6 +13,17 @@ import {
 import type { Vehicule } from "@/lib/types/database";
 
 const CARTE_GRISE_BUCKET = "carte-grise";
+const VEHICULE_PHOTOS_BUCKET = "vehicule-photos";
+const MAX_CARTE_GRISE_SIZE = 10 * 1024 * 1024;
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
+const MAX_PHOTOS = 10;
+const ALLOWED_CARTE_GRISE_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type ActionResult<T = void> = {
   data?: T;
@@ -35,6 +46,19 @@ async function requireClientProfile() {
   }
 
   return { supabase, user, profile, error: null };
+}
+
+async function cleanupUploadedFiles(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  carteGrisePath: string | null,
+  photoPaths: string[]
+) {
+  if (carteGrisePath) {
+    await supabase.storage.from(CARTE_GRISE_BUCKET).remove([carteGrisePath]);
+  }
+  if (photoPaths.length > 0) {
+    await supabase.storage.from(VEHICULE_PHOTOS_BUCKET).remove(photoPaths);
+  }
 }
 
 export async function getMyVehicules(): Promise<ActionResult<Vehicule[]>> {
@@ -69,7 +93,10 @@ export async function createVehicule(formData: FormData): Promise<ActionResult<V
   const description = String(formData.get("description") ?? "").trim() || null;
   const rawPrixAchat = String(formData.get("prix_achat") ?? "").trim();
   const type = String(formData.get("type") ?? "") as VehiculeType;
-  const file = formData.get("carte_grise") as File | null;
+  const carteGriseFile = formData.get("carte_grise") as File | null;
+  const photoFiles = formData
+    .getAll("photos")
+    .filter((item): item is File => item instanceof File && item.size > 0);
 
   if (!rawImmat) {
     return { error: "L'immatriculation est obligatoire." };
@@ -111,33 +138,67 @@ export async function createVehicule(formData: FormData): Promise<ActionResult<V
     return { error: "Sélectionnez le type de véhicule (auto ou moto)." };
   }
 
-  if (!file || file.size === 0) {
-    return { error: "La carte grise est obligatoire." };
+  if (photoFiles.length > MAX_PHOTOS) {
+    return { error: `Maximum ${MAX_PHOTOS} photos par véhicule.` };
   }
 
-  const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
-  if (!allowedTypes.includes(file.type)) {
-    return { error: "Format accepté : PDF, JPEG, PNG ou WebP." };
+  for (const photo of photoFiles) {
+    if (!ALLOWED_PHOTO_TYPES.includes(photo.type)) {
+      return { error: "Photos : format accepté JPEG, PNG ou WebP." };
+    }
+    if (photo.size > MAX_PHOTO_SIZE) {
+      return { error: "Chaque photo doit faire moins de 5 Mo." };
+    }
   }
 
-  if (file.size > 10 * 1024 * 1024) {
-    return { error: "Fichier trop volumineux (max 10 Mo)." };
+  let carte_grise_url: string | null = null;
+  const uploadedPhotoPaths: string[] = [];
+
+  if (carteGriseFile && carteGriseFile.size > 0) {
+    if (!ALLOWED_CARTE_GRISE_TYPES.includes(carteGriseFile.type)) {
+      return { error: "Carte grise : format accepté PDF, JPEG, PNG ou WebP." };
+    }
+    if (carteGriseFile.size > MAX_CARTE_GRISE_SIZE) {
+      return { error: "Carte grise trop volumineuse (max 10 Mo)." };
+    }
+
+    const extension =
+      carteGriseFile.name.split(".").pop()?.toLowerCase() ?? "pdf";
+    carte_grise_url = `${user.id}/${Date.now()}-carte-grise.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(CARTE_GRISE_BUCKET)
+      .upload(carte_grise_url, carteGriseFile, {
+        contentType: carteGriseFile.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return { error: `Échec upload carte grise : ${uploadError.message}` };
+    }
+  }
+
+  for (let i = 0; i < photoFiles.length; i++) {
+    const photo = photoFiles[i];
+    const extension = photo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const storagePath = `${user.id}/${Date.now()}-photo-${i}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(VEHICULE_PHOTOS_BUCKET)
+      .upload(storagePath, photo, {
+        contentType: photo.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      await cleanupUploadedFiles(supabase, carte_grise_url, uploadedPhotoPaths);
+      return { error: `Échec upload photo : ${uploadError.message}` };
+    }
+
+    uploadedPhotoPaths.push(storagePath);
   }
 
   const immatriculation = normalizeImmatriculation(rawImmat);
-  const extension = file.name.split(".").pop()?.toLowerCase() ?? "pdf";
-  const storagePath = `${user.id}/${Date.now()}-carte-grise.${extension}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from(CARTE_GRISE_BUCKET)
-    .upload(storagePath, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (uploadError) {
-    return { error: `Échec upload carte grise : ${uploadError.message}` };
-  }
 
   const { data: inserted, error: insertError } = await supabase
     .from("vehicules")
@@ -150,13 +211,14 @@ export async function createVehicule(formData: FormData): Promise<ActionResult<V
       description,
       prix_achat,
       type,
-      carte_grise_url: storagePath,
+      carte_grise_url,
+      photos_urls: uploadedPhotoPaths.length > 0 ? uploadedPhotoPaths : null,
     })
     .select("*")
     .single();
 
   if (insertError) {
-    await supabase.storage.from(CARTE_GRISE_BUCKET).remove([storagePath]);
+    await cleanupUploadedFiles(supabase, carte_grise_url, uploadedPhotoPaths);
     return { error: insertError.message };
   }
 
@@ -172,7 +234,7 @@ export async function deleteVehicule(id: string): Promise<ActionResult> {
 
   const { data: vehicule, error: fetchError } = await supabase
     .from("vehicules")
-    .select("id, carte_grise_url, user_id")
+    .select("id, carte_grise_url, photos_urls, user_id")
     .eq("id", id)
     .eq("user_id", profile.id)
     .maybeSingle();
@@ -195,6 +257,12 @@ export async function deleteVehicule(id: string): Promise<ActionResult> {
     await supabase.storage
       .from(CARTE_GRISE_BUCKET)
       .remove([vehicule.carte_grise_url]);
+  }
+
+  if (vehicule.photos_urls?.length) {
+    await supabase.storage
+      .from(VEHICULE_PHOTOS_BUCKET)
+      .remove(vehicule.photos_urls);
   }
 
   revalidatePath("/client/vehicules");
@@ -226,6 +294,36 @@ export async function getCarteGriseSignedUrl(
 
   if (signError || !data?.signedUrl) {
     return { error: signError?.message ?? "Impossible d'ouvrir le document." };
+  }
+
+  return { data: data.signedUrl, error: null };
+}
+
+export async function getVehiculePhotoSignedUrl(
+  storagePath: string
+): Promise<ActionResult<string>> {
+  const { supabase, profile, error } = await requireClientProfile();
+  if (error || !profile) {
+    return { error: error ?? "Profil introuvable." };
+  }
+
+  const { data: vehicule } = await supabase
+    .from("vehicules")
+    .select("id, photos_urls")
+    .eq("user_id", profile.id)
+    .contains("photos_urls", [storagePath])
+    .maybeSingle();
+
+  if (!vehicule) {
+    return { error: "Photo non autorisée." };
+  }
+
+  const { data, error: signError } = await supabase.storage
+    .from(VEHICULE_PHOTOS_BUCKET)
+    .createSignedUrl(storagePath, 3600);
+
+  if (signError || !data?.signedUrl) {
+    return { error: signError?.message ?? "Impossible d'afficher la photo." };
   }
 
   return { data: data.signedUrl, error: null };

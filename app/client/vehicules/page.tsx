@@ -11,7 +11,8 @@ export default async function ClientVehiculesPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Mes véhicules</h1>
         <p className="text-muted-foreground">
-          Enregistrez vos véhicules pour préparer votre assurance auto ou moto.
+          Enregistrez vos véhicules pour publier une annonce vente/location ou
+          préparer une souscription assurance.
         </p>
       </div>
 

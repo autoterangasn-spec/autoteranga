@@ -31,6 +31,7 @@ create table vehicules (
   puissance_fiscale int,
   nombre_places int,
   carte_grise_url text,
+  photos_urls text[],
   created_at timestamptz default now(),
   unique(immatriculation, numero_chassis)
 );

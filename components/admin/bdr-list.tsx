@@ -61,18 +61,24 @@ export function BdrList({ bordereaux }: BdrListProps) {
     setLoading(true);
     setError(null);
 
-    const result = await genererBdrDuMois();
+    try {
+      const result = await genererBdrDuMois();
 
-    if (result.error) {
-      setError(result.error);
-      if (result.data?.id) {
+      if (result.error) {
+        setError(result.error);
+        if (result.data?.id) {
+          router.push(`/admin/bdr/${result.data.id}`);
+        }
+      } else if (result.data?.id) {
         router.push(`/admin/bdr/${result.data.id}`);
       }
-    } else if (result.data?.id) {
-      router.push(`/admin/bdr/${result.data.id}`);
+    } catch {
+      setError(
+        "Impossible de générer le bordereau. Réessayez ou contactez le support."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (

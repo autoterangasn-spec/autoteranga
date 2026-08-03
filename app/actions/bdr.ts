@@ -13,8 +13,31 @@ type ActionResult<T = void> = {
   error: string | null;
 };
 
-interface PoliceForBdr extends Police {
-  vehicules: { immatriculation: string } | null;
+function toInteger(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n);
+}
+
+async function resolveCreatedById(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<string | null> {
+  const { data: byAuth } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("auth_user_id", userId)
+    .maybeSingle();
+
+  if (byAuth?.id) return byAuth.id;
+
+  const { data: byId } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return byId?.id ?? null;
 }
 
 async function requireAdmin() {
@@ -60,117 +83,177 @@ function resolveDateSouscription(police: Police): string | null {
 }
 
 function isInMonth(dateStr: string | null, mois: number, annee: number): boolean {
-  if (!dateStr) return false;
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return false;
-  return d.getMonth() + 1 === mois && d.getFullYear() === annee;
+  if (!dateStr || dateStr.length < 7) return false;
+  const [year, month] = dateStr.slice(0, 10).split("-").map(Number);
+  if (!year || !month) return false;
+  return month === mois && year === annee;
+}
+
+function mapSupabaseError(message: string): string {
+  if (message.includes("foreign key constraint") && message.includes("created_by")) {
+    return "Profil admin introuvable pour l'enregistrement du bordereau.";
+  }
+  if (message.includes("Could not find a relationship")) {
+    return "Erreur de liaison polices/véhicules. Contactez le support technique.";
+  }
+  if (message.includes("violates not-null constraint") && message.includes("n_police")) {
+    return "Une police éligible n'a pas de numéro de police.";
+  }
+  return message;
 }
 
 export async function genererBdrDuMois(
   mois?: number,
   annee?: number
 ): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireAdmin();
-  if (auth.error || !auth.profile) {
-    return { error: auth.error };
-  }
+  try {
+    const auth = await requireAdmin();
+    if (auth.error || !auth.profile || !auth.user) {
+      return { error: auth.error ?? "Accès non autorisé." };
+    }
 
-  const now = new Date();
-  const targetMois = mois ?? now.getMonth() + 1;
-  const targetAnnee = annee ?? now.getFullYear();
+    const now = new Date();
+    const targetMois = mois ?? now.getMonth() + 1;
+    const targetAnnee = annee ?? now.getFullYear();
 
-  const { supabase, profile } = auth;
+    const { supabase, user } = auth;
+    const createdBy = await resolveCreatedById(supabase, user.id);
 
-  const { data: existing } = await supabase
-    .from("bordereaux_reglement")
-    .select("id")
-    .eq("mois", targetMois)
-    .eq("annee", targetAnnee)
-    .maybeSingle();
+    const { data: existing, error: existingError } = await supabase
+      .from("bordereaux_reglement")
+      .select("id")
+      .eq("mois", targetMois)
+      .eq("annee", targetAnnee)
+      .maybeSingle();
 
-  if (existing) {
-    return {
-      error: `Un bordereau existe déjà pour ${targetMois}/${targetAnnee}.`,
-      data: { id: existing.id },
-    };
-  }
+    if (existingError) {
+      return { error: mapSupabaseError(existingError.message) };
+    }
 
-  const { data: policesData, error: policesError } = await supabase
-    .from("polices")
-    .select("*, vehicules(immatriculation)")
-    .eq("source_plateforme", true);
+    if (existing) {
+      return {
+        error: `Un bordereau existe déjà pour ${targetMois}/${targetAnnee}.`,
+        data: { id: existing.id },
+      };
+    }
 
-  if (policesError) {
-    return { error: policesError.message };
-  }
+    const { data: policesData, error: policesError } = await supabase
+      .from("polices")
+      .select("*")
+      .eq("source_plateforme", true);
 
-  const polices = (policesData ?? []) as PoliceForBdr[];
-  const eligible = polices.filter((p) => {
-    const dateRef = resolveDateSouscription(p);
-    return isInMonth(dateRef, targetMois, targetAnnee);
-  });
+    if (policesError) {
+      return { error: mapSupabaseError(policesError.message) };
+    }
 
-  if (eligible.length === 0) {
-    return {
-      error: `Aucune police plateforme trouvée pour ${targetMois}/${targetAnnee}.`,
-    };
-  }
-
-  const lignes: Omit<BordereauLigne, "id" | "bordereau_id">[] = [];
-  let totalPrimes = 0;
-  let totalCommission = 0;
-
-  for (const police of eligible) {
-    const montantPrime = police.prime_ttc ?? 0;
-    const commission = Math.round(Number(police.commission_autoteranga ?? 0));
-    const moyenPaiement = await getLatestMoyenPaiement(supabase, police.id);
-
-    lignes.push({
-      police_id: police.id,
-      n_police: police.num_police,
-      immatriculation: police.vehicules?.immatriculation ?? "—",
-      montant_prime: montantPrime,
-      commission,
-      date_souscription: resolveDateSouscription(police),
-      moyen_paiement: moyenPaiement,
+    const polices = (policesData ?? []) as Police[];
+    const eligible = polices.filter((p) => {
+      const dateRef = resolveDateSouscription(p);
+      return isInMonth(dateRef, targetMois, targetAnnee);
     });
 
-    totalPrimes += montantPrime;
-    totalCommission += commission;
+    if (eligible.length === 0) {
+      return {
+        error: `Aucune police plateforme trouvée pour ${targetMois}/${targetAnnee}.`,
+      };
+    }
+
+    const vehiculeIds = Array.from(
+      new Set(
+        eligible
+          .map((p) => p.vehicule_id)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
+
+    const immatByVehiculeId = new Map<string, string>();
+    if (vehiculeIds.length > 0) {
+      const { data: vehicules, error: vehiculesError } = await supabase
+        .from("vehicules")
+        .select("id, immatriculation")
+        .in("id", vehiculeIds);
+
+      if (vehiculesError) {
+        return { error: mapSupabaseError(vehiculesError.message) };
+      }
+
+      for (const vehicule of vehicules ?? []) {
+        immatByVehiculeId.set(vehicule.id, vehicule.immatriculation);
+      }
+    }
+
+    const lignes: Omit<BordereauLigne, "id" | "bordereau_id">[] = [];
+    let totalPrimes = 0;
+    let totalCommission = 0;
+
+    for (const police of eligible) {
+      const montantPrime = toInteger(police.prime_ttc);
+      const commission = toInteger(police.commission_autoteranga);
+      const moyenPaiement = await getLatestMoyenPaiement(supabase, police.id);
+      const immatriculation =
+        (police.vehicule_id
+          ? immatByVehiculeId.get(police.vehicule_id)
+          : undefined) ?? "—";
+
+      lignes.push({
+        police_id: police.id,
+        n_police: police.num_police || "INCONNU",
+        immatriculation,
+        montant_prime: montantPrime,
+        commission,
+        date_souscription: resolveDateSouscription(police),
+        moyen_paiement: moyenPaiement,
+      });
+
+      totalPrimes += montantPrime;
+      totalCommission += commission;
+    }
+
+    const { data: bordereau, error: bordereauError } = await supabase
+      .from("bordereaux_reglement")
+      .insert({
+        mois: targetMois,
+        annee: targetAnnee,
+        total_primes: totalPrimes,
+        total_commission: totalCommission,
+        statut: "brouillon",
+        created_by: createdBy,
+      })
+      .select("id")
+      .single();
+
+    if (bordereauError || !bordereau) {
+      return {
+        error: mapSupabaseError(
+          bordereauError?.message ?? "Création du bordereau impossible."
+        ),
+      };
+    }
+
+    const { error: lignesError } = await supabase.from("bordereau_lignes").insert(
+      lignes.map((l) => ({
+        ...l,
+        bordereau_id: bordereau.id,
+      }))
+    );
+
+    if (lignesError) {
+      return { error: mapSupabaseError(lignesError.message) };
+    }
+
+    revalidatePath("/admin/bdr");
+    revalidatePath(`/admin/bdr/${bordereau.id}`);
+
+    return { data: { id: bordereau.id }, error: null };
+  } catch (err) {
+    console.error("genererBdrDuMois:", err);
+    return {
+      error:
+        err instanceof Error
+          ? `Erreur lors de la génération du bordereau : ${err.message}`
+          : "Erreur inattendue lors de la génération du bordereau.",
+    };
   }
-
-  const { data: bordereau, error: bordereauError } = await supabase
-    .from("bordereaux_reglement")
-    .insert({
-      mois: targetMois,
-      annee: targetAnnee,
-      total_primes: totalPrimes,
-      total_commission: totalCommission,
-      statut: "brouillon",
-      created_by: profile.id,
-    })
-    .select("id")
-    .single();
-
-  if (bordereauError || !bordereau) {
-    return { error: bordereauError?.message ?? "Création du bordereau impossible." };
-  }
-
-  const { error: lignesError } = await supabase.from("bordereau_lignes").insert(
-    lignes.map((l) => ({
-      ...l,
-      bordereau_id: bordereau.id,
-    }))
-  );
-
-  if (lignesError) {
-    return { error: lignesError.message };
-  }
-
-  revalidatePath("/admin/bdr");
-  revalidatePath(`/admin/bdr/${bordereau.id}`);
-
-  return { data: { id: bordereau.id }, error: null };
 }
 
 export async function uploadAvisRecette(

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function LoginPage() {
+export default function InscriptionPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Suspense
@@ -14,7 +14,7 @@ export default function LoginPage() {
           </div>
         }
       >
-        <AuthForm initialMode="login" />
+        <AuthForm initialMode="signup" />
       </Suspense>
     </div>
   );

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isAdminUserId, updateSession } from "@/lib/supabase/middleware";
+import { getRedirectPathForRole } from "@/lib/supabase/routing";
+import { getUserRole, updateSession } from "@/lib/supabase/middleware";
+import type { UserRole } from "@/lib/types/database";
 
 function getEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -15,6 +17,20 @@ function getEnv() {
   };
 }
 
+function redirectToLogin(request: NextRequest, pathname: string) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = "/login";
+  redirectUrl.searchParams.set("redirect", pathname);
+  return NextResponse.redirect(redirectUrl);
+}
+
+function redirectByRole(request: NextRequest, role: UserRole | null) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = getRedirectPathForRole(role);
+  redirectUrl.search = "";
+  return NextResponse.redirect(redirectUrl);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -22,7 +38,11 @@ export async function middleware(request: NextRequest) {
     const { url, anonKey, isConfigured } = getEnv();
 
     if (!isConfigured) {
-      if (pathname.startsWith("/admin")) {
+      if (
+        pathname.startsWith("/admin") ||
+        pathname.startsWith("/client") ||
+        pathname.startsWith("/prestataire")
+      ) {
         return NextResponse.redirect(
           new URL("/login?error=config", request.url)
         );
@@ -39,27 +59,21 @@ export async function middleware(request: NextRequest) {
       anonKey!
     );
 
+    const role = user ? await getUserRole(supabase, user.id) : null;
+
     if (pathname === "/") {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.search = "";
-      if (user && (await isAdminUserId(supabase, user.id))) {
-        redirectUrl.pathname = "/admin/dashboard";
-      } else {
-        redirectUrl.pathname = "/login";
+      if (user && role) {
+        return redirectByRole(request, role);
       }
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
     if (pathname.startsWith("/admin")) {
       if (!user) {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = "/login";
-        redirectUrl.searchParams.set("redirect", pathname);
-        return NextResponse.redirect(redirectUrl);
+        return redirectToLogin(request, pathname);
       }
 
-      const admin = await isAdminUserId(supabase, user.id);
-      if (!admin) {
+      if (role !== "admin") {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/login";
         redirectUrl.searchParams.set("error", "unauthorized");
@@ -67,14 +81,34 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    if (pathname === "/login" && user) {
-      const admin = await isAdminUserId(supabase, user.id);
-      if (admin) {
+    if (pathname.startsWith("/client")) {
+      if (!user) {
+        return redirectToLogin(request, pathname);
+      }
+
+      if (role !== "client") {
         const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = "/admin/dashboard";
-        redirectUrl.search = "";
+        redirectUrl.pathname = "/login";
+        redirectUrl.searchParams.set("error", "unauthorized");
         return NextResponse.redirect(redirectUrl);
       }
+    }
+
+    if (pathname.startsWith("/prestataire")) {
+      if (!user) {
+        return redirectToLogin(request, pathname);
+      }
+
+      if (role !== "prestataire") {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/login";
+        redirectUrl.searchParams.set("error", "unauthorized");
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
+
+    if ((pathname === "/login" || pathname === "/inscription") && user && role) {
+      return redirectByRole(request, role);
     }
 
     return supabaseResponse;
@@ -84,5 +118,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/admin/:path*", "/login"],
+  matcher: [
+    "/",
+    "/admin/:path*",
+    "/client/:path*",
+    "/prestataire/:path*",
+    "/login",
+    "/inscription",
+  ],
 };

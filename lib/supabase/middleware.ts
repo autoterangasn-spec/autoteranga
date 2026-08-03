@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import type { UserRole } from "@/lib/types/database";
+
 type MiddlewareSupabaseClient = ReturnType<typeof createServerClient>;
 
 export async function updateSession(
@@ -39,10 +41,10 @@ export async function updateSession(
   }
 }
 
-export async function isAdminUserId(
+export async function getUserRole(
   supabase: MiddlewareSupabaseClient,
   userId: string
-): Promise<boolean> {
+): Promise<UserRole | null> {
   try {
     const byAuthUserId = await supabase
       .from("profiles")
@@ -50,7 +52,9 @@ export async function isAdminUserId(
       .eq("auth_user_id", userId)
       .maybeSingle();
 
-    if (byAuthUserId.data?.role === "admin") return true;
+    if (byAuthUserId.data?.role) {
+      return byAuthUserId.data.role as UserRole;
+    }
 
     const byId = await supabase
       .from("profiles")
@@ -58,14 +62,16 @@ export async function isAdminUserId(
       .eq("id", userId)
       .maybeSingle();
 
-    if (byId.data?.role === "admin") return true;
+    if (byId.data?.role) {
+      return byId.data.role as UserRole;
+    }
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (user?.id === userId && user.app_metadata?.role === "admin") {
-      return true;
+      return "admin";
     }
 
     if (user?.email) {
@@ -75,11 +81,21 @@ export async function isAdminUserId(
         .eq("email", user.email)
         .maybeSingle();
 
-      if (byEmail.data?.role === "admin") return true;
+      if (byEmail.data?.role) {
+        return byEmail.data.role as UserRole;
+      }
     }
 
-    return false;
+    return null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function isAdminUserId(
+  supabase: MiddlewareSupabaseClient,
+  userId: string
+): Promise<boolean> {
+  const role = await getUserRole(supabase, userId);
+  return role === "admin";
 }

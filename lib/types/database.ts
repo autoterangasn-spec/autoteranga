@@ -23,10 +23,13 @@ export interface Profile {
   created_at: string;
 }
 
+export type VehiculeType = "auto" | "moto";
+
 export interface Vehicule {
   id: string;
   user_id: string | null;
   immatriculation: string;
+  type: VehiculeType | null;
   numero_chassis: string | null;
   marque: string | null;
   modele: string | null;

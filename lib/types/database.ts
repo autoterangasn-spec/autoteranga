@@ -6,6 +6,11 @@ export type DocumentType =
   | "facture"
   | "attestation";
 
+export type StatutPaiementAskia = "en_attente" | "avis_recette_recu";
+export type MoyenPaiement = "wave" | "om";
+export type BordereauStatut = "brouillon" | "envoye" | "solde";
+export type AssuranceTransactionStatut = "en_attente" | "confirme" | "echoue";
+
 export interface Profile {
   id: string;
   auth_user_id: string | null;
@@ -13,6 +18,7 @@ export interface Profile {
   nom: string | null;
   prenoms: string | null;
   email: string | null;
+  adresse: string | null;
   role: UserRole;
   created_at: string;
 }
@@ -63,7 +69,60 @@ export interface Police {
   tca: number | null;
   prime_ttc: number | null;
   statut: "active" | "expiree" | "resiliee";
+  statut_paiement_askia: StatutPaiementAskia | null;
+  avis_recette_url: string | null;
+  commission_autoteranga: number | null;
+  source_plateforme: boolean | null;
+  date_souscription: string | null;
   created_at: string;
+}
+
+export interface AssuranceTransaction {
+  id: string;
+  police_id: string;
+  montant_prime: number;
+  moyen_paiement: MoyenPaiement;
+  reference_paiement: string | null;
+  statut: AssuranceTransactionStatut;
+  created_at: string;
+}
+
+export interface MarketplaceTransaction {
+  id: string;
+  profile_id: string | null;
+  montant: number;
+  type_operation: string | null;
+  reference_paiement: string | null;
+  statut: string;
+  created_at: string;
+}
+
+export interface BordereauReglement {
+  id: string;
+  mois: number;
+  annee: number;
+  total_primes: number;
+  total_commission: number;
+  statut: BordereauStatut;
+  avis_recette_url: string | null;
+  created_at: string;
+  created_by: string | null;
+}
+
+export interface BordereauLigne {
+  id: string;
+  bordereau_id: string;
+  police_id: string | null;
+  n_police: string;
+  immatriculation: string;
+  montant_prime: number;
+  commission: number;
+  date_souscription: string | null;
+  moyen_paiement: MoyenPaiement | null;
+}
+
+export interface BordereauWithLignes extends BordereauReglement {
+  bordereau_lignes: BordereauLigne[];
 }
 
 export interface PoliceDocument {
@@ -125,6 +184,30 @@ export type Database = {
         Row: PoliceDocument;
         Insert: Partial<PoliceDocument>;
         Update: Partial<PoliceDocument>;
+        Relationships: [];
+      };
+      assurance_transactions: {
+        Row: AssuranceTransaction;
+        Insert: Partial<AssuranceTransaction>;
+        Update: Partial<AssuranceTransaction>;
+        Relationships: [];
+      };
+      marketplace_transactions: {
+        Row: MarketplaceTransaction;
+        Insert: Partial<MarketplaceTransaction>;
+        Update: Partial<MarketplaceTransaction>;
+        Relationships: [];
+      };
+      bordereaux_reglement: {
+        Row: BordereauReglement;
+        Insert: Partial<BordereauReglement>;
+        Update: Partial<BordereauReglement>;
+        Relationships: [];
+      };
+      bordereau_lignes: {
+        Row: BordereauLigne;
+        Insert: Partial<BordereauLigne>;
+        Update: Partial<BordereauLigne>;
         Relationships: [];
       };
     };

@@ -71,6 +71,7 @@ export async function getProfileForAuthUser(
         telephone: "",
         nom: null,
         prenoms: null,
+        adresse: null,
         created_at: new Date().toISOString(),
       },
       error: null,

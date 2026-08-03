@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { getSupabaseConfigError } from "@/lib/supabase/env";
 import { getProfileForAuthUser } from "@/lib/supabase/profile";
 
 export function LoginForm() {
@@ -27,18 +28,30 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(
-    errorParam === "unauthorized"
-      ? "Accès refusé. Seuls les administrateurs peuvent accéder à cette zone."
-      : errorParam === "auth"
-        ? "Erreur d'authentification. Veuillez réessayer."
-        : null
-  );
+  const [error, setError] = useState<string | null>(() => {
+    if (errorParam === "unauthorized") {
+      return "Accès refusé. Seuls les administrateurs peuvent accéder à cette zone.";
+    }
+    if (errorParam === "auth") {
+      return "Erreur d'authentification. Veuillez réessayer.";
+    }
+    if (errorParam === "config") {
+      return "Configuration Supabase manquante sur Vercel. Vérifiez les variables d'environnement puis redéployez.";
+    }
+    return null;
+  });
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
+
+    const configError = getSupabaseConfigError();
+    if (configError) {
+      setError(configError);
+      setLoading(false);
+      return;
+    }
 
     const supabase = createClient();
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -47,7 +60,14 @@ export function LoginForm() {
     });
 
     if (signInError || !data.user) {
-      setError("Email ou mot de passe incorrect.");
+      const message = signInError?.message?.toLowerCase() ?? "";
+      if (message.includes("invalid api key") || message.includes("api key")) {
+        setError(
+          "Clé Supabase invalide sur Vercel. Vérifiez NEXT_PUBLIC_SUPABASE_ANON_KEY puis redéployez."
+        );
+      } else {
+        setError("Email ou mot de passe incorrect.");
+      }
       setLoading(false);
       return;
     }

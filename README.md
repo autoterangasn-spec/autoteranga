@@ -92,3 +92,54 @@ npm run build    # Build production
 npm run start    # Serveur production
 npm run lint     # ESLint
 ```
+
+## Déploiement Vercel
+
+URL de prod : `https://autoterangacom.vercel.app`
+
+### 1. Variables d'environnement (obligatoire)
+
+Dans **Vercel → Project → Settings → Environment Variables**, ajoutez :
+
+| Variable | Valeur |
+|----------|--------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://wyqdhyiefymfiazqlagk.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Copier depuis `.env.local` (Supabase → Settings → API → anon public) |
+
+Cochez **Production**, **Preview** et **Development**.
+
+Puis **Redeploy** le projet (obligatoire : les variables `NEXT_PUBLIC_*` sont injectées au build).
+
+### 2. Supabase Auth — URLs autorisées
+
+Dans **Supabase → Authentication → URL Configuration** :
+
+- **Site URL** : `https://autoterangacom.vercel.app`
+- **Redirect URLs** (ajouter) :
+  - `https://autoterangacom.vercel.app/**`
+  - `https://autoterangacom.vercel.app/auth/callback`
+
+Si vous avez un domaine custom plus tard, ajoutez-le aussi.
+
+### 3. SQL déjà exécuté en prod
+
+Vérifier que ces scripts ont été lancés dans Supabase SQL Editor :
+
+- `supabase/fix-admin-login.sql` — profil admin + RLS profiles
+- `supabase/rls-admin-read.sql` — lecture tables admin
+- `supabase/storage-policies.sql` — accès bucket documents
+
+### 4. Vérification
+
+1. Ouvrir `https://autoterangacom.vercel.app/login`
+2. Se connecter avec `autoterangasn@gmail.com`
+3. Dashboard → police `5723510AS000057` → Voir PDF / WhatsApp
+
+### Erreur « Email ou mot de passe incorrect » sur Vercel
+
+| Cause | Solution |
+|-------|----------|
+| Variables env absentes | Ajouter sur Vercel + **Redeploy** |
+| Mauvaise anon key | Recopier depuis Supabase dashboard |
+| Mot de passe incorrect | Réinitialiser dans Supabase → Authentication → Users |
+| Message « Configuration Supabase manquante » | Redéployer après avoir ajouté les variables |

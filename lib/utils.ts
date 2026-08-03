@@ -10,11 +10,11 @@ export function formatCurrency(amount: number | null | undefined): string {
   return new Intl.NumberFormat("fr-FR").format(amount) + " FCFA";
 }
 
-/** PDF-safe currency: strips thousand separators that jsPDF renders incorrectly. */
+/** PDF-safe currency: fr-FR formatting with ASCII spaces (jsPDF renders U+202F as "/"). */
 export function formatCurrencyForPdf(amount: number | null | undefined): string {
   if (amount == null) return "—";
   const formatted = new Intl.NumberFormat("fr-FR").format(amount);
-  const pdfSafe = formatted.replace(/[\u202f\u00a0\s]/g, "");
+  const pdfSafe = formatted.replace(/[\u202F\u00A0]/g, " ");
   return `${pdfSafe} FCFA`;
 }
 

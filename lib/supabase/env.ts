@@ -1,3 +1,22 @@
+const DEFAULT_SITE_URL = "https://autoteranga.com";
+
+export function getSiteUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  return DEFAULT_SITE_URL;
+}
+
+export function getAuthCallbackUrl(): string {
+  return `${getSiteUrl()}/auth/callback`;
+}
+
 export function getSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

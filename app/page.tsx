@@ -4,7 +4,18 @@ import { getProfileForAuthUser } from "@/lib/supabase/profile";
 import { getRedirectPathForRole } from "@/lib/supabase/routing";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function HomePage() {
+interface HomePageProps {
+  searchParams?: { error?: string; error_code?: string };
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  if (
+    searchParams?.error_code === "otp_expired" ||
+    searchParams?.error === "access_denied"
+  ) {
+    redirect("/login?error=otp_expired");
+  }
+
   try {
     const supabase = await createClient();
     const {

@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 
+import { getSiteUrl } from "@/lib/supabase/env";
+import { getProfileForAuthUser } from "@/lib/supabase/profile";
 import { getRedirectPathForRole } from "@/lib/supabase/routing";
 import { createClient } from "@/lib/supabase/server";
-import { getProfileForAuthUser } from "@/lib/supabase/profile";
+
+function loginRedirect(siteUrl: string, error: string) {
+  return NextResponse.redirect(`${siteUrl}/login?error=${error}`);
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  const siteUrl = getSiteUrl() || origin.replace(/\/$/, "");
   const code = searchParams.get("code");
   const next = searchParams.get("next");
+  const authError = searchParams.get("error");
+  const errorCode = searchParams.get("error_code");
+
+  if (authError || errorCode) {
+    if (errorCode === "otp_expired" || authError === "access_denied") {
+      return loginRedirect(siteUrl, "otp_expired");
+    }
+    return loginRedirect(siteUrl, "auth");
+  }
 
   if (code) {
     const supabase = await createClient();
@@ -25,9 +40,9 @@ export async function GET(request: Request) {
         }
       }
 
-      return NextResponse.redirect(`${origin}${destination}`);
+      return NextResponse.redirect(`${siteUrl}${destination}`);
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  return loginRedirect(siteUrl, "auth");
 }

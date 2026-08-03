@@ -38,6 +38,9 @@ export function LoginForm() {
     if (errorParam === "config") {
       return "Configuration Supabase manquante sur Vercel. Vérifiez les variables d'environnement puis redéployez.";
     }
+    if (errorParam === "otp_expired") {
+      return "Le lien de confirmation a expiré. Réinscrivez-vous pour recevoir un nouvel email.";
+    }
     return null;
   });
 

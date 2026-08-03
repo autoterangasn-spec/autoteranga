@@ -24,7 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { getSupabaseConfigError } from "@/lib/supabase/env";
+import {
+  getAuthCallbackUrl,
+  getSupabaseConfigError,
+} from "@/lib/supabase/env";
 import { getProfileForAuthUser } from "@/lib/supabase/profile";
 import { getRedirectPathForRole } from "@/lib/supabase/routing";
 import type { UserRole } from "@/lib/types/database";
@@ -59,6 +62,9 @@ export function AuthForm({ initialMode = "login" }: AuthFormProps) {
     }
     if (errorParam === "config") {
       return "Configuration Supabase manquante. Vérifiez les variables d'environnement.";
+    }
+    if (errorParam === "otp_expired") {
+      return "Le lien de confirmation a expiré. Réinscrivez-vous ou demandez un nouvel email de confirmation.";
     }
     return null;
   });
@@ -139,6 +145,7 @@ export function AuthForm({ initialMode = "login" }: AuthFormProps) {
       email,
       password,
       options: {
+        emailRedirectTo: getAuthCallbackUrl(),
         data: {
           telephone: telephone.trim(),
           nom: nom.trim() || null,

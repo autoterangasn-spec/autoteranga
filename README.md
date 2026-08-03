@@ -20,7 +20,10 @@ Renseignez dans `.env.local` :
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://wyqdhyiefymfiazqlagk.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_cle_anon
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
+
+En production, `NEXT_PUBLIC_SITE_URL` doit être `https://autoteranga.com` (emails de confirmation et callback auth).
 
 Puis :
 
@@ -95,7 +98,7 @@ npm run lint     # ESLint
 
 ## Déploiement Vercel
 
-URL de prod : `https://autoterangacom.vercel.app`
+URL de prod : `https://autoteranga.com` (domaine custom ; preview Vercel : `https://autoterangacom.vercel.app`)
 
 ### 1. Variables d'environnement (obligatoire)
 
@@ -105,6 +108,7 @@ Dans **Vercel → Project → Settings → Environment Variables**, ajoutez :
 |----------|--------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://wyqdhyiefymfiazqlagk.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Copier depuis `.env.local` (Supabase → Settings → API → anon public) |
+| `NEXT_PUBLIC_SITE_URL` | `https://autoteranga.com` |
 
 Cochez **Production**, **Preview** et **Development**.
 
@@ -114,12 +118,12 @@ Puis **Redeploy** le projet (obligatoire : les variables `NEXT_PUBLIC_*` sont in
 
 Dans **Supabase → Authentication → URL Configuration** :
 
-- **Site URL** : `https://autoterangacom.vercel.app`
+- **Site URL** : `https://autoteranga.com`
 - **Redirect URLs** (ajouter) :
+  - `https://autoteranga.com/**`
   - `https://autoterangacom.vercel.app/**`
-  - `https://autoterangacom.vercel.app/auth/callback`
 
-Si vous avez un domaine custom plus tard, ajoutez-le aussi.
+Sans cette configuration, les liens de confirmation email redirigent vers `localhost:3000`.
 
 ### 3. SQL déjà exécuté en prod
 

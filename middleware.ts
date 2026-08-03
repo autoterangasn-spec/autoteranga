@@ -44,11 +44,11 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith("/prestataire")
       ) {
         return NextResponse.redirect(
-          new URL("/login?error=config", request.url)
+          new URL("/inscription?error=config", request.url)
         );
       }
       if (pathname === "/") {
-        return NextResponse.redirect(new URL("/login", request.url));
+        return NextResponse.redirect(new URL("/inscription", request.url));
       }
       return NextResponse.next();
     }
@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
       if (user && role) {
         return redirectByRole(request, role);
       }
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/inscription", request.url));
     }
 
     if (pathname.startsWith("/admin")) {

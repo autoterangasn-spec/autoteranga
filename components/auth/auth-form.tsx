@@ -354,6 +354,18 @@ export function AuthForm({ initialMode = "login" }: AuthFormProps) {
             </Link>
           </p>
         )}
+
+        {mode === "signup" && (
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Déjà un compte ?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Se connecter
+            </Link>
+          </p>
+        )}
       </CardContent>
     </Card>
   );

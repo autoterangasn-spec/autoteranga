@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CreditCard, FileText } from "lucide-react";
-
-import { AttestationDownload } from "@/components/client/attestation-download";
+import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +16,7 @@ import { DEVIS_STATUT_LABELS, getFormuleInfo } from "@/lib/askia-tarifs";
 import type { DevisWithVehicule } from "@/lib/types/database";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-interface DevisListProps {
+interface AdminDevisListProps {
   devis: DevisWithVehicule[];
 }
 
@@ -32,30 +30,17 @@ function statutVariant(
       return "warning";
     case "police_emise":
       return "success";
-    case "accepte":
-      return "success";
-    case "refuse":
-      return "destructive";
-    case "brouillon":
-      return "warning";
     default:
       return "secondary";
   }
 }
 
-export function DevisList({ devis }: DevisListProps) {
+export function AdminDevisList({ devis }: AdminDevisListProps) {
   if (devis.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center">
-        <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-        <p className="font-medium">Aucun devis pour le moment</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Demandez un devis depuis la liste de vos véhicules.
-        </p>
-        <Button className="mt-4" asChild>
-          <Link href="/client/vehicules">Mes véhicules</Link>
-        </Button>
-      </div>
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        Aucun devis en cours (envoyé, payé ou police émise).
+      </p>
     );
   }
 
@@ -66,10 +51,10 @@ export function DevisList({ devis }: DevisListProps) {
           <TableRow>
             <TableHead>Véhicule</TableHead>
             <TableHead>Formule</TableHead>
-            <TableHead>Prime TTC</TableHead>
+            <TableHead>Prime</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -93,27 +78,19 @@ export function DevisList({ devis }: DevisListProps) {
                 </TableCell>
                 <TableCell>{formatDate(item.created_at)}</TableCell>
                 <TableCell className="text-right">
-                  {item.statut === "envoye" && (
-                    <Button size="sm" asChild>
-                      <Link href={`/client/devis/${item.id}/paiement`}>
-                        <CreditCard className="mr-1 h-3 w-3" />
-                        Payer ma prime
-                      </Link>
+                  <div className="flex items-center justify-end gap-2">
+                    {item.statut === "police_emise" && item.police_id && (
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/admin/polices/${item.police_id}`}>
+                          <ExternalLink className="mr-1 h-3 w-3" />
+                          Police
+                        </Link>
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/admin/devis/${item.id}`}>Détail</Link>
                     </Button>
-                  )}
-                  {item.statut === "paye" && (
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href={`/client/devis/${item.id}/paiement`}>
-                        Voir paiement
-                      </Link>
-                    </Button>
-                  )}
-                  {item.statut === "police_emise" && (
-                    <AttestationDownload
-                      devisId={item.id}
-                      numAttestation={item.num_attestation}
-                    />
-                  )}
+                  </div>
                 </TableCell>
               </TableRow>
             );

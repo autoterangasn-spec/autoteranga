@@ -26,7 +26,13 @@ export interface Profile {
 export type VehiculeType = "auto" | "moto";
 
 export type FormuleAssurance = "tiers" | "tiers_plus" | "tous_risques";
-export type DevisStatut = "brouillon" | "envoye" | "accepte" | "refuse";
+export type DevisStatut =
+  | "brouillon"
+  | "envoye"
+  | "accepte"
+  | "refuse"
+  | "paye"
+  | "police_emise";
 
 export interface DevisAssurance {
   id: string;
@@ -35,6 +41,10 @@ export interface DevisAssurance {
   prime_calculee: number;
   statut: DevisStatut;
   carte_grise_url: string | null;
+  police_id: string | null;
+  num_police: string | null;
+  num_attestation: string | null;
+  paid_at: string | null;
   created_at: string;
 }
 
@@ -103,7 +113,8 @@ export interface Police {
 
 export interface AssuranceTransaction {
   id: string;
-  police_id: string;
+  police_id: string | null;
+  devis_id: string | null;
   montant_prime: number;
   moyen_paiement: MoyenPaiement;
   reference_paiement: string | null;

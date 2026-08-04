@@ -25,6 +25,20 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 En production, `NEXT_PUBLIC_SITE_URL` doit être `https://autoteranga.com` (emails de confirmation et callback auth).
 
+Variables Sprint 2 (paiement + Askia) :
+
+```
+SUPABASE_SERVICE_ROLE_KEY=votre_cle_service_role
+WAVE_API_KEY=wave_sn_prod_...
+WAVE_WEBHOOK_SECRET=wave_sn_WHS_...
+WAVE_MOCK=true
+ASKIA_WEBHOOK_SECRET=votre_secret_askia
+```
+
+- `WAVE_MOCK=true` : simule Wave sans clé API (bouton « Simuler paiement réussi »).
+- Webhook Wave : `POST https://votre-domaine/api/webhooks/wave`
+- Webhook Askia (stub) : `POST https://votre-domaine/api/webhooks/askia` avec header `Authorization: Bearer {ASKIA_WEBHOOK_SECRET}`
+
 Puis :
 
 ```bash
@@ -41,6 +55,9 @@ Ouvrez [http://localhost:3000/login](http://localhost:3000/login).
 | `/login` | Connexion email/mot de passe (admin uniquement) |
 | `/admin/dashboard` | Tableau `vue_expirations_prochaines` avec filtres et badges urgence |
 | `/admin/polices/[id]` | Dossier complet : véhicule, client, prime, documents |
+| `/admin/devis` | Devis clients (envoyé, payé, police émise) + validation Askia MVP |
+| `/client/devis` | Liste devis client + bouton paiement |
+| `/client/devis/[id]/paiement` | Paiement Wave / Orange Money (OM bientôt) |
 
 ### Dashboard
 
@@ -131,7 +148,8 @@ Vérifier que ces scripts ont été lancés dans Supabase SQL Editor :
 
 - `supabase/fix-admin-login.sql` — profil admin + RLS profiles
 - `supabase/rls-admin-read.sql` — lecture tables admin
-- `supabase/storage-policies.sql` — accès bucket documents
+- `supabase/sprint1-devis-assurance.sql` — devis assurance
+- `supabase/sprint2-paiement-askia.sql` — paiement Wave, statuts paye/police_emise
 
 ### 4. Vérification
 

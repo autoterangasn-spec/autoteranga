@@ -6,7 +6,13 @@ import type { VehiculeType } from "@/lib/vehicules";
  */
 export type FormuleAssurance = "tiers" | "tiers_plus" | "tous_risques";
 
-export type DevisStatut = "brouillon" | "envoye" | "accepte" | "refuse";
+export type DevisStatut =
+  | "brouillon"
+  | "envoye"
+  | "accepte"
+  | "refuse"
+  | "paye"
+  | "police_emise";
 
 export interface FormuleInfo {
   id: FormuleAssurance;
@@ -121,4 +127,6 @@ export const DEVIS_STATUT_LABELS: Record<DevisStatut, string> = {
   envoye: "Envoyé",
   accepte: "Accepté",
   refuse: "Refusé",
+  paye: "Payé",
+  police_emise: "Police émise",
 };

@@ -5,6 +5,8 @@ export interface EmitPoliceInput {
   devisId: string;
   numPolice: string;
   numAttestation: string;
+  attestationUrl?: string | null;
+  factureUrl?: string | null;
 }
 
 export interface EmitPoliceResult {
@@ -88,7 +90,9 @@ export async function emitPoliceFromDevis(
     return { success: false, error: policeError?.message ?? "Création police impossible." };
   }
 
-  const fichierUrl = `${input.numPolice}/attestation-${input.numAttestation}.pdf`;
+  const fichierUrl =
+    input.attestationUrl ??
+    `${input.numPolice}/attestation-${input.numAttestation}.pdf`;
   const diotaliUrl = `https://aas.diotali.com/#/attestation/${input.numAttestation}`;
 
   const { error: docError } = await supabase.from("police_documents").insert({
@@ -104,6 +108,18 @@ export async function emitPoliceFromDevis(
     return { success: false, error: docError.message };
   }
 
+  if (input.factureUrl) {
+    const { error: factureError } = await supabase.from("police_documents").insert({
+      police_id: police.id,
+      type_document: "facture",
+      fichier_url: input.factureUrl,
+    });
+
+    if (factureError) {
+      return { success: false, error: factureError.message };
+    }
+  }
+
   await supabase
     .from("assurance_transactions")
     .update({ police_id: police.id })
@@ -116,6 +132,8 @@ export async function emitPoliceFromDevis(
       police_id: police.id,
       num_police: input.numPolice,
       num_attestation: input.numAttestation,
+      attestation_url: input.attestationUrl ?? fichierUrl,
+      facture_url: input.factureUrl ?? null,
     })
     .eq("id", input.devisId);
 

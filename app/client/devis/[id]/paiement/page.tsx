@@ -4,9 +4,10 @@ import { ArrowLeft } from "lucide-react";
 
 import { getDevisForPayment } from "@/app/actions/paiement";
 import { PaymentForm } from "@/components/client/payment-form";
-import { AttestationDownload } from "@/components/client/attestation-download";
+import { DevisDocuments } from "@/components/client/devis-documents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { isWaveMockMode } from "@/lib/wave/client";
 
 interface PaymentPageProps {
   params: { id: string };
@@ -32,7 +33,7 @@ export default async function DevisPaymentPage({
     redirect("/client/devis");
   }
 
-  const isMockMode = process.env.WAVE_MOCK === "true";
+  const isMockMode = isWaveMockMode();
   const mockSession = searchParams.mock_session ?? null;
   const transactionRef = searchParams.ref ?? null;
 
@@ -47,7 +48,8 @@ export default async function DevisPaymentPage({
         </Button>
         <h1 className="text-2xl font-bold tracking-tight">Payer ma prime</h1>
         <p className="text-muted-foreground">
-          Règlement sécurisé Mobile Money — reversement direct Askia.
+          Règlement sécurisé Mobile Money via Wave (compte Autoteranga /
+          Senegalsoft).
         </p>
       </div>
 
@@ -59,8 +61,9 @@ export default async function DevisPaymentPage({
               attestation ci-dessous.
             </AlertDescription>
           </Alert>
-          <AttestationDownload
+          <DevisDocuments
             devisId={devis.id}
+            numPolice={devis.num_police}
             numAttestation={devis.num_attestation}
           />
         </div>

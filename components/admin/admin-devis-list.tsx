@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { CreditCard, ExternalLink, FileCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +79,19 @@ export function AdminDevisList({ devis }: AdminDevisListProps) {
                 <TableCell>{formatDate(item.created_at)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
+                    {item.statut === "envoye" && (
+                      <Badge variant="outline" className="hidden sm:inline-flex">
+                        En attente paiement
+                      </Badge>
+                    )}
+                    {item.statut === "paye" && (
+                      <Button size="sm" asChild>
+                        <Link href={`/admin/devis/${item.id}`}>
+                          <FileCheck className="mr-1 h-3 w-3" />
+                          Traiter Askia
+                        </Link>
+                      </Button>
+                    )}
                     {item.statut === "police_emise" && item.police_id && (
                       <Button variant="ghost" size="sm" asChild>
                         <Link href={`/admin/polices/${item.police_id}`}>
@@ -87,9 +100,19 @@ export function AdminDevisList({ devis }: AdminDevisListProps) {
                         </Link>
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/admin/devis/${item.id}`}>Détail</Link>
-                    </Button>
+                    {item.statut === "envoye" && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/devis/${item.id}`}>
+                          <CreditCard className="mr-1 h-3 w-3" />
+                          Détail
+                        </Link>
+                      </Button>
+                    )}
+                    {(item.statut === "paye" || item.statut === "police_emise") && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/devis/${item.id}`}>Détail</Link>
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

@@ -136,8 +136,8 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
           <CheckCircle2 className="h-12 w-12 text-emerald-600" />
           <h1 className="text-2xl font-bold">Demande de devis envoyée</h1>
           <p className="text-muted-foreground">
-            Votre demande a été transmise à Askia Assurances. Vous serez
-            contacté pour finaliser la souscription.
+            Votre devis est prêt. Procédez au paiement depuis la liste « Mes
+            devis ».
           </p>
         </div>
 

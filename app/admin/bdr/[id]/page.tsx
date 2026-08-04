@@ -77,7 +77,8 @@ export default async function BdrDetailPage({ params }: BdrDetailPageProps) {
           <CardHeader>
             <CardTitle>{periode}</CardTitle>
             <CardDescription>
-              Export PDF, envoi Askia et réception avis de recette.
+              Export PDF (format BDR HP), virement Askia et réception avis de
+              recette (COM DEDUITE).
             </CardDescription>
           </CardHeader>
           <CardContent>

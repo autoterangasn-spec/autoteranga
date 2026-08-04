@@ -35,7 +35,9 @@ WAVE_MOCK=true
 ASKIA_WEBHOOK_SECRET=votre_secret_askia
 ```
 
-- `WAVE_MOCK=true` : simule Wave sans clé API (bouton « Simuler paiement réussi »).
+- Sans `WAVE_API_KEY`, le mode simulation Wave est activé automatiquement en local.
+- `WAVE_MOCK=true` : force la simulation même si une clé API est définie.
+- Flux réel : client paie via Wave → compte Autoteranga (Senegalsoft) → fin de mois BDR → Askia → avis de recette.
 - Webhook Wave : `POST https://votre-domaine/api/webhooks/wave`
 - Webhook Askia (stub) : `POST https://votre-domaine/api/webhooks/askia` avec header `Authorization: Bearer {ASKIA_WEBHOOK_SECRET}`
 

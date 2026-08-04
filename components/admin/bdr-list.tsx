@@ -71,7 +71,8 @@ export function BdrList({ bordereaux }: BdrListProps) {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Bordereaux de règlement Askia — primes collectées via la plateforme.
+          Bordereaux mensuels — primes Wave collectées sur Autoteranga, reversées
+          à Askia en fin de mois. Commission déduite sur l&apos;avis de recette.
         </p>
         <Button onClick={handleGenerate} disabled={loading}>
           {loading ? (

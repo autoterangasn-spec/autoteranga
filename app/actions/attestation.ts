@@ -11,6 +11,9 @@ type ActionResult<T = void> = {
   error: string | null;
 };
 
+const POLICES_BUCKET = "polices-documents";
+const MAX_PDF_SIZE = 10 * 1024 * 1024;
+
 async function requireAdmin() {
   const supabase = await createClient();
   const {
@@ -139,27 +142,120 @@ export async function generateAttestationPdf(
   return { data: { base64, filename }, error: null };
 }
 
-export async function validateAskiaManually(
+export async function getDevisDocumentUrl(
   devisId: string,
-  numPolice: string,
-  numAttestation: string
+  type: "attestation" | "facture"
+): Promise<ActionResult<{ url: string }>> {
+  const { devis, error } = await requireClientOrAdminForDevis(devisId);
+  if (error || !devis) {
+    return { error: error ?? "Devis introuvable." };
+  }
+
+  if (devis.statut !== "police_emise") {
+    return { error: "Documents non disponibles pour ce devis." };
+  }
+
+  const storagePath =
+    type === "attestation" ? devis.attestation_url : devis.facture_url;
+
+  if (!storagePath) {
+    if (type === "attestation" && devis.num_attestation) {
+      const generated = await generateAttestationPdf(devisId);
+      if (generated.data) {
+        return {
+          data: {
+            url: `data:application/pdf;base64,${generated.data.base64}`,
+          },
+          error: null,
+        };
+      }
+    }
+    return { error: `${type === "attestation" ? "Attestation" : "Facture"} non disponible.` };
+  }
+
+  const supabase = await createClient();
+  const { data, error: signError } = await supabase.storage
+    .from(POLICES_BUCKET)
+    .createSignedUrl(storagePath, 3600);
+
+  if (signError || !data?.signedUrl) {
+    return { error: signError?.message ?? "Lien de téléchargement indisponible." };
+  }
+
+  return { data: { url: data.signedUrl }, error: null };
+}
+
+async function uploadPolicePdf(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  file: File,
+  storagePath: string
+): Promise<string | null> {
+  if (file.type !== "application/pdf") {
+    return "Format accepté : PDF uniquement.";
+  }
+  if (file.size > MAX_PDF_SIZE) {
+    return "Fichier trop volumineux (max 10 Mo).";
+  }
+
+  const { error } = await supabase.storage
+    .from(POLICES_BUCKET)
+    .upload(storagePath, file, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+
+  return error?.message ?? null;
+}
+
+export async function validateAskiaManually(
+  formData: FormData
 ): Promise<ActionResult<{ policeId: string }>> {
   const auth = await requireAdmin();
   if (auth.error) {
     return { error: auth.error };
   }
 
-  const police = numPolice.trim();
-  const attestation = numAttestation.trim();
+  const devisId = String(formData.get("devis_id") ?? "").trim();
+  const police = String(formData.get("num_police") ?? "").trim();
+  const attestation = String(formData.get("num_attestation") ?? "").trim();
+  const attestationFile = formData.get("attestation_pdf") as File | null;
+  const factureFile = formData.get("facture_pdf") as File | null;
 
-  if (!police || !attestation) {
+  if (!devisId || !police || !attestation) {
     return { error: "N° police et N° attestation requis." };
+  }
+
+  if (!attestationFile?.size || !factureFile?.size) {
+    return { error: "Attestation PDF et facture PDF requis." };
+  }
+
+  const attestationPath = `${police}/attestation-${attestation}.pdf`;
+  const facturePath = `${police}/facture-${police}.pdf`;
+
+  const attestationUploadError = await uploadPolicePdf(
+    auth.supabase,
+    attestationFile,
+    attestationPath
+  );
+  if (attestationUploadError) {
+    return { error: `Attestation : ${attestationUploadError}` };
+  }
+
+  const factureUploadError = await uploadPolicePdf(
+    auth.supabase,
+    factureFile,
+    facturePath
+  );
+  if (factureUploadError) {
+    return { error: `Facture : ${factureUploadError}` };
   }
 
   const result = await emitPoliceFromDevis({
     devisId,
     numPolice: police,
     numAttestation: attestation,
+    attestationUrl: attestationPath,
+    factureUrl: facturePath,
   });
 
   if (!result.success || !result.policeId) {
@@ -170,6 +266,7 @@ export async function validateAskiaManually(
   revalidatePath("/admin/devis");
   revalidatePath(`/admin/devis/${devisId}`);
   revalidatePath("/client/devis");
+  revalidatePath(`/client/devis/${devisId}`);
 
   return { data: { policeId: result.policeId }, error: null };
 }

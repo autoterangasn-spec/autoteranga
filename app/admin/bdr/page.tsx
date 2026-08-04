@@ -29,7 +29,8 @@ export default async function AdminBdrPage() {
           Bordereaux de règlement
         </h1>
         <p className="text-muted-foreground">
-          Génération mensuelle des primes à reverser à Askia Assurances.
+          Génération mensuelle des primes collectées via Wave (Senegalsoft), à
+          reverser à Askia via BDR (format HP, ex. N°57232026002).
         </p>
       </div>
 
@@ -49,8 +50,8 @@ export default async function AdminBdrPage() {
         <CardHeader>
           <CardTitle>BDR mensuels</CardTitle>
           <CardDescription>
-            Polices vendues via Autoteranga (source_plateforme = true) du mois
-            en cours.
+            Polices vendues via Autoteranga du mois en cours. Virement Askia +
+            avis de recette avec commission déduite.
           </CardDescription>
         </CardHeader>
         <CardContent>

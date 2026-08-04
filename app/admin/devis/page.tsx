@@ -21,7 +21,8 @@ export default async function AdminDevisPage() {
           Devis assurance
         </h1>
         <p className="text-muted-foreground">
-          Demandes clients — paiement Wave et émission police Askia.
+          Demandes clients — paiement Wave (Senegalsoft) et émission manuelle
+          police Askia.
         </p>
       </div>
 
@@ -41,8 +42,9 @@ export default async function AdminDevisPage() {
         <CardHeader>
           <CardTitle>Devis en cours</CardTitle>
           <CardDescription>
-            Statuts : envoyé (en attente paiement), payé (validation Askia),
-            police émise.
+            Statuts : envoyé (en attente paiement client), payé (création police
+            Askia + upload documents), police émise (documents client
+            disponibles).
           </CardDescription>
         </CardHeader>
         <CardContent>

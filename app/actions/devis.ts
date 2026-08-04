@@ -84,6 +84,34 @@ export async function getMyDevis(): Promise<ActionResult<DevisWithVehicule[]>> {
   return { data: (data ?? []) as DevisWithVehicule[], error: null };
 }
 
+export async function getClientDevisDetail(
+  devisId: string
+): Promise<ActionResult<DevisWithVehicule>> {
+  const { supabase, profile, error } = await requireClientProfile();
+  if (error || !profile) {
+    return { error: error ?? "Profil introuvable." };
+  }
+
+  const { data, error: fetchError } = await supabase
+    .from("devis_assurance")
+    .select("*, vehicules(*)")
+    .eq("id", devisId)
+    .maybeSingle();
+
+  if (fetchError || !data) {
+    return { error: "Devis introuvable." };
+  }
+
+  const devis = data as DevisWithVehicule;
+  const owned = await getOwnedVehicule(supabase, profile.id, devis.vehicule_id);
+
+  if (!owned) {
+    return { error: "Accès non autorisé." };
+  }
+
+  return { data: devis, error: null };
+}
+
 export async function getVehiculeForDevis(
   vehiculeId: string
 ): Promise<ActionResult<Vehicule>> {

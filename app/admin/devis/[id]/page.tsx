@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { getAdminDevisDetail } from "@/app/actions/admin-devis";
-import { AttestationDownload } from "@/components/client/attestation-download";
+import { DevisDocuments } from "@/components/client/devis-documents";
 import { DevisValidationForm } from "@/components/admin/devis-validation-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -101,12 +101,25 @@ export default async function AdminDevisDetailPage({
         </Card>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Workflow Askia</CardTitle>
+          <CardDescription>
+            Processus manuel : création police sur Askia, puis publication des
+            documents au client.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DevisValidationForm devisId={devis.id} statut={devis.statut} />
+        </CardContent>
+      </Card>
+
       {devis.statut === "police_emise" && devis.police_id && (
         <Card>
           <CardHeader>
             <CardTitle>Police émise</CardTitle>
             <CardDescription>
-              Dossier complet et attestation PDF disponibles.
+              Documents uploadés et disponibles pour le client.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
@@ -116,26 +129,10 @@ export default async function AdminDevisDetailPage({
                 Voir la police
               </Link>
             </Button>
-            <AttestationDownload
+            <DevisDocuments
               devisId={devis.id}
+              numPolice={devis.num_police}
               numAttestation={devis.num_attestation}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {devis.statut !== "police_emise" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Validation Askia (MVP)</CardTitle>
-            <CardDescription>
-              Déclenchement manuel de l&apos;émission police / attestation.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DevisValidationForm
-              devisId={devis.id}
-              disabled={devis.statut !== "paye"}
             />
           </CardContent>
         </Card>

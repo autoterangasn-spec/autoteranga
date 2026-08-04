@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { CreditCard, FileText } from "lucide-react";
-
-import { AttestationDownload } from "@/components/client/attestation-download";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -103,16 +101,13 @@ export function DevisList({ devis }: DevisListProps) {
                   )}
                   {item.statut === "paye" && (
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/client/devis/${item.id}/paiement`}>
-                        Voir paiement
-                      </Link>
+                      <Link href={`/client/devis/${item.id}`}>Suivre</Link>
                     </Button>
                   )}
                   {item.statut === "police_emise" && (
-                    <AttestationDownload
-                      devisId={item.id}
-                      numAttestation={item.num_attestation}
-                    />
+                    <Button size="sm" asChild>
+                      <Link href={`/client/devis/${item.id}`}>Mes documents</Link>
+                    </Button>
                   )}
                 </TableCell>
               </TableRow>

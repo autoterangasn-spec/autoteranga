@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { confirmAssurancePayment } from "@/lib/payment/confirm";
 import {
   getWaveCheckoutSession,
+  isWaveMockMode,
   verifyWaveWebhookSignature,
 } from "@/lib/wave/client";
 
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Référence manquante" }, { status: 400 });
   }
 
-  if (sessionId && process.env.WAVE_MOCK !== "true") {
+  if (sessionId && !isWaveMockMode()) {
     const verified = await getWaveCheckoutSession(sessionId);
     if (verified && verified.status !== "complete" && verified.status !== "completed") {
       return NextResponse.json({ received: true, pending: true });

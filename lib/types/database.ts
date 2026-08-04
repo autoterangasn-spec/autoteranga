@@ -44,6 +44,8 @@ export interface DevisAssurance {
   police_id: string | null;
   num_police: string | null;
   num_attestation: string | null;
+  attestation_url: string | null;
+  facture_url: string | null;
   paid_at: string | null;
   created_at: string;
 }

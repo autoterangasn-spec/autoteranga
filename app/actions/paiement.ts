@@ -6,7 +6,7 @@ import { confirmAssurancePayment } from "@/lib/payment/confirm";
 import { getSiteUrl } from "@/lib/supabase/env";
 import { getProfileForAuthUser } from "@/lib/supabase/profile";
 import { createClient } from "@/lib/supabase/server";
-import { createWaveCheckoutSession, waveConfigured } from "@/lib/wave/client";
+import { createWaveCheckoutSession, isWaveMockMode, waveConfigured } from "@/lib/wave/client";
 import type { DevisWithVehicule, MoyenPaiement } from "@/lib/types/database";
 
 type ActionResult<T = void> = {
@@ -90,7 +90,7 @@ export async function initiatePayment(
   if (!waveConfigured()) {
     return {
       error:
-        "Paiement Wave non configuré. Contactez le support ou activez WAVE_MOCK=true en développement.",
+        "Paiement Wave non configuré. Sur Vercel : Settings → Environment Variables → ajoutez WAVE_API_KEY (ou laissez vide pour le mode simulation en local).",
     };
   }
 
@@ -116,7 +116,7 @@ export async function initiatePayment(
     .maybeSingle();
 
   if (existingTx?.reference_paiement) {
-    if (process.env.WAVE_MOCK === "true") {
+    if (isWaveMockMode()) {
       const siteUrl = getSiteUrl();
       return {
         data: {
@@ -196,12 +196,12 @@ export async function initiatePayment(
   }
 }
 
-/** Mode mock : simule un paiement Wave réussi (dev uniquement). */
+/** Mode mock : simule un paiement Wave réussi (dev / sans clé API). */
 export async function simulateMockPayment(
   transactionId: string
 ): Promise<ActionResult> {
-  if (process.env.WAVE_MOCK !== "true") {
-    return { error: "Simulation disponible uniquement en mode WAVE_MOCK." };
+  if (!isWaveMockMode()) {
+    return { error: "Simulation disponible uniquement en mode mock Wave." };
   }
 
   const { supabase, profile, error } = await requireClientProfile();

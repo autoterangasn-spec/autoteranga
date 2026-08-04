@@ -91,10 +91,11 @@ export function PaymentForm({
     return (
       <Alert>
         <AlertDescription>
-          Paiement confirmé. Votre prime a été reversée au compte séquestre Askia.
+          Paiement confirmé. Votre prime a été encaissée via Wave sur le compte
+          Autoteranga (Senegalsoft).
           {devis.statut === "police_emise"
-            ? " Votre attestation est disponible."
-            : " Vous recevrez votre attestation sous 24 à 48 h."}
+            ? " Votre attestation et facture sont disponibles."
+            : " Vous recevrez votre attestation sous 24 à 48 h après émission de la police Askia."}
         </AlertDescription>
       </Alert>
     );
@@ -134,8 +135,10 @@ export function PaymentForm({
             <span>{formatCurrency(devis.prime_calculee)}</span>
           </div>
           <p className="pt-2 text-xs text-muted-foreground">
-            La prime est versée directement au compte séquestre Askia Assurances.
-            Autoteranga ne détient pas les fonds (conformité CIMA).
+            La prime est encaissée via Wave sur le compte Autoteranga
+            (Senegalsoft). Elle sera reversée à Askia Assurances en fin de mois
+            via le bordereau de règlement (BDR). Votre commission est déduite
+            sur l&apos;avis de recette Askia.
           </p>
         </CardContent>
       </Card>
@@ -199,7 +202,7 @@ export function PaymentForm({
           <CardHeader>
             <CardTitle className="text-base">Mode simulation (dev)</CardTitle>
             <CardDescription>
-              WAVE_MOCK=true — simulez un paiement réussi sans clé Wave.
+              Mode simulation — sans clé Wave API (local ou WAVE_MOCK=true).
             </CardDescription>
           </CardHeader>
           <CardContent>

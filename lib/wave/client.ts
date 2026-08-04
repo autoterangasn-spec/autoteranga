@@ -22,8 +22,11 @@ export interface CreateCheckoutInput {
   errorUrl: string;
 }
 
-function isWaveMockMode(): boolean {
-  return process.env.WAVE_MOCK === "true";
+/** Mock si WAVE_MOCK=true, ou si aucune clé API (dev local sans config Vercel). */
+export function isWaveMockMode(): boolean {
+  if (process.env.WAVE_MOCK === "true") return true;
+  if (process.env.WAVE_MOCK === "false") return false;
+  return !getWaveApiKey();
 }
 
 function getWaveApiKey(): string | null {

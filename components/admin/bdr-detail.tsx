@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatBdrPeriode } from "@/lib/constants/bdr";
+import { formatBdrPeriode, formatBdrReference } from "@/lib/constants/bdr";
 import type { BordereauLigne, BordereauReglement } from "@/lib/types/database";
 import { formatCurrency, formatCurrencyForPdf, formatDate } from "@/lib/utils";
 
@@ -57,10 +57,15 @@ export function BdrDetail({ bordereau, lignes }: BdrDetailProps) {
     doc.text("Bordereau de règlement — Autoteranga / Askia", 14, 18);
     doc.setFontSize(11);
     doc.text(`Période : ${periode}`, 14, 26);
-    doc.text(`Statut : ${bordereau.statut}`, 14, 32);
+    doc.text(
+      `Réf. BDR (format Askia HP) : ${formatBdrReference(bordereau.mois, bordereau.annee)}`,
+      14,
+      32
+    );
+    doc.text(`Statut : ${bordereau.statut}`, 14, 38);
 
     autoTable(doc, {
-      startY: 38,
+      startY: 44,
       head: [
         [
           "N° Police",
@@ -156,6 +161,13 @@ export function BdrDetail({ bordereau, lignes }: BdrDetailProps) {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        En fin de mois : virement du total des primes à Askia Assurances via ce
+        bordereau (format BDR HP, ex.{" "}
+        {formatBdrReference(bordereau.mois, bordereau.annee)}). Askia retourne
+        un avis de recette avec commission déduite (ex. COM DEDUITE 9980F).
+      </p>
+
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="secondary">{bordereau.statut}</Badge>
         {bordereau.avis_recette_url && (

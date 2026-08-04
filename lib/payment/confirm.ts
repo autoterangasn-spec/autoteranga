@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { createServiceClient } from "@/lib/supabase/service";
 
 export interface ConfirmPaymentResult {
@@ -7,38 +9,66 @@ export interface ConfirmPaymentResult {
   error?: string;
 }
 
+/** Client session ou service role — typage permissif pour compatibilité webhook + mock. */
+type ConfirmSupabase = SupabaseClient;
+
+function getConfirmClient(supabase?: ConfirmSupabase): ConfirmSupabase {
+  if (supabase) return supabase;
+  try {
+    return createServiceClient();
+  } catch (err) {
+    throw new Error(
+      err instanceof Error
+        ? err.message
+        : "SUPABASE_SERVICE_ROLE_KEY manquante pour la confirmation webhook."
+    );
+  }
+}
+
+type TransactionRow = {
+  id: string;
+  devis_id: string | null;
+  statut: string;
+  reference_paiement: string | null;
+};
+
 /**
  * Confirme un paiement Wave — met à jour assurance_transaction et devis.
  * Idempotent : si déjà confirmé, retourne success sans erreur.
+ * Passez le client session utilisateur pour la simulation mock (sans service role).
  */
 export async function confirmAssurancePayment(
   reference: string,
-  waveSessionId?: string
+  waveSessionId?: string,
+  supabase?: ConfirmSupabase
 ): Promise<ConfirmPaymentResult> {
-  const supabase = createServiceClient();
+  let db: ConfirmSupabase;
+  try {
+    db = getConfirmClient(supabase);
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Client Supabase indisponible.",
+    };
+  }
 
-  let transaction: {
-    id: string;
-    devis_id: string | null;
-    statut: string;
-    reference_paiement: string | null;
-  } | null = null;
+  let transaction: TransactionRow | null = null;
 
-  const { data: byId } = await supabase
+  const { data: byId } = await db
     .from("assurance_transactions")
     .select("id, devis_id, statut, reference_paiement")
     .eq("id", reference)
     .maybeSingle();
 
-  transaction = byId;
+  transaction = (byId as TransactionRow | null) ?? null;
 
   if (!transaction && waveSessionId) {
-    const { data: byRef } = await supabase
+    const { data: byRef } = await db
       .from("assurance_transactions")
       .select("id, devis_id, statut, reference_paiement")
       .eq("reference_paiement", waveSessionId)
       .maybeSingle();
-    transaction = byRef;
+    transaction = (byRef as TransactionRow | null) ?? null;
   }
 
   if (!transaction) {
@@ -53,7 +83,7 @@ export async function confirmAssurancePayment(
     };
   }
 
-  const { error: txError } = await supabase
+  const { error: txError } = await db
     .from("assurance_transactions")
     .update({
       statut: "confirme",
@@ -66,7 +96,7 @@ export async function confirmAssurancePayment(
   }
 
   if (transaction.devis_id) {
-    const { error: devisError } = await supabase
+    const { error: devisError } = await db
       .from("devis_assurance")
       .update({ statut: "paye", paid_at: new Date().toISOString() })
       .eq("id", transaction.devis_id)

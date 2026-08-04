@@ -73,6 +73,30 @@ WITH CHECK (
   )
 );
 
+-- Client : confirmer sa propre transaction en attente (simulation mock Wave)
+DROP POLICY IF EXISTS "assurance_transactions_update_own_confirm" ON public.assurance_transactions;
+CREATE POLICY "assurance_transactions_update_own_confirm"
+ON public.assurance_transactions FOR UPDATE TO authenticated
+USING (
+  statut = 'en_attente'
+  AND EXISTS (
+    SELECT 1 FROM public.devis_assurance d
+    JOIN public.vehicules v ON v.id = d.vehicule_id
+    WHERE d.id = assurance_transactions.devis_id
+      AND v.user_id = public.get_my_profile_id()
+      AND d.statut = 'envoye'
+  )
+)
+WITH CHECK (
+  statut = 'confirme'
+  AND EXISTS (
+    SELECT 1 FROM public.devis_assurance d
+    JOIN public.vehicules v ON v.id = d.vehicule_id
+    WHERE d.id = assurance_transactions.devis_id
+      AND v.user_id = public.get_my_profile_id()
+  )
+);
+
 -- Admin update devis (déjà présent sprint1, recréé pour idempotence)
 DROP POLICY IF EXISTS "devis_update_admin" ON public.devis_assurance;
 CREATE POLICY "devis_update_admin"

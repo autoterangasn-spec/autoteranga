@@ -224,10 +224,23 @@ export async function simulateMockPayment(
     return { error: "Accès non autorisé." };
   }
 
-  const result = await confirmAssurancePayment(transactionId, `mock_cs_${transactionId}`);
+  try {
+    const result = await confirmAssurancePayment(
+      transactionId,
+      `mock_cs_${transactionId}`,
+      supabase
+    );
 
-  if (!result.success) {
-    return { error: result.error ?? "Échec confirmation paiement." };
+    if (!result.success) {
+      return { error: result.error ?? "Échec confirmation paiement." };
+    }
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error
+          ? err.message
+          : "Erreur inattendue lors de la confirmation.",
+    };
   }
 
   revalidatePath("/client/devis");

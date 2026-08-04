@@ -6,7 +6,6 @@ import { CreditCard, Loader2, Smartphone } from "lucide-react";
 
 import {
   initiatePayment,
-  simulateMockPayment,
 } from "@/app/actions/paiement";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -75,16 +74,48 @@ export function PaymentForm({
     setSimulating(true);
     setError(null);
 
-    const { error: simError } = await simulateMockPayment(transactionId);
-    setSimulating(false);
+    const timeoutMs = 30_000;
 
-    if (simError) {
-      setError(simError);
-      return;
+    try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await fetch("/api/paiement/mock-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId }),
+        signal: controller.signal,
+      });
+
+      window.clearTimeout(timeoutId);
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setError(
+          payload.error ??
+            "La confirmation a échoué. Réessayez ou contactez le support."
+        );
+        return;
+      }
+
+      router.push(`/client/devis/${devis.id}/paiement?success=1`);
+      router.refresh();
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError(
+          "La confirmation a pris trop de temps (30 s). Vérifiez votre connexion et réessayez."
+        );
+      } else {
+        setError(
+          "Impossible de confirmer le paiement. Réessayez dans quelques instants."
+        );
+      }
+    } finally {
+      setSimulating(false);
     }
-
-    router.push(`/client/devis/${devis.id}/paiement?success=1`);
-    router.refresh();
   }
 
   if (devis.statut === "paye" || devis.statut === "police_emise" || showSuccess) {

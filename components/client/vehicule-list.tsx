@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { FileText, Loader2, Trash2 } from "lucide-react";
 
 import {
   deleteVehicule,
@@ -108,7 +109,7 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
               <TableHead>Type</TableHead>
               <TableHead>Carte grise</TableHead>
               <TableHead>Ajouté le</TableHead>
-              <TableHead className="w-[100px]" />
+              <TableHead className="w-[180px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -163,19 +164,29 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
                   </TableCell>
                   <TableCell>{formatDate(vehicule.created_at)}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={isPending && pendingId === vehicule.id}
-                      onClick={() => handleDelete(vehicule.id)}
-                      aria-label="Supprimer"
-                    >
-                      {isPending && pendingId === vehicule.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {vehicule.type && vehicule.annee ? (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/client/vehicules/${vehicule.id}/devis`}>
+                            <FileText className="mr-1 h-3.5 w-3.5" />
+                            Devis
+                          </Link>
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={isPending && pendingId === vehicule.id}
+                        onClick={() => handleDelete(vehicule.id)}
+                        aria-label="Supprimer"
+                      >
+                        {isPending && pendingId === vehicule.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        )}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

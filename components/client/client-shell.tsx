@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Car, LayoutDashboard, LogOut, Menu } from "lucide-react";
+import { Car, FileText, LayoutDashboard, LogOut, Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,12 @@ export function ClientShell({ children, userEmail }: ClientShellProps) {
                 Mes véhicules
               </Link>
             </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/client/devis" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Mes devis
+              </Link>
+            </Button>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -74,6 +80,9 @@ export function ClientShell({ children, userEmail }: ClientShellProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link href="/client/vehicules">Mes véhicules</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/client/devis">Mes devis</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   Déconnexion

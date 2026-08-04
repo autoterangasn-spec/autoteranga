@@ -25,6 +25,23 @@ export interface Profile {
 
 export type VehiculeType = "auto" | "moto";
 
+export type FormuleAssurance = "tiers" | "tiers_plus" | "tous_risques";
+export type DevisStatut = "brouillon" | "envoye" | "accepte" | "refuse";
+
+export interface DevisAssurance {
+  id: string;
+  vehicule_id: string;
+  formule: FormuleAssurance;
+  prime_calculee: number;
+  statut: DevisStatut;
+  carte_grise_url: string | null;
+  created_at: string;
+}
+
+export interface DevisWithVehicule extends DevisAssurance {
+  vehicules: Vehicule | null;
+}
+
 export interface Vehicule {
   id: string;
   user_id: string | null;
@@ -215,6 +232,12 @@ export type Database = {
         Row: BordereauLigne;
         Insert: Partial<BordereauLigne>;
         Update: Partial<BordereauLigne>;
+        Relationships: [];
+      };
+      devis_assurance: {
+        Row: DevisAssurance;
+        Insert: Partial<DevisAssurance>;
+        Update: Partial<DevisAssurance>;
         Relationships: [];
       };
     };

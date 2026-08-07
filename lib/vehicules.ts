@@ -1,12 +1,18 @@
-const PLATE_REGEX = /^[A-Z]{2}-?\d{3}-?[A-Z]{2}$/i;
+// SIV (ancien) : AA-617-SE — 2 lettres, 3 chiffres, 2 lettres
+// Régional : DK-8967-BG — 2 lettres (région), 4 chiffres, 2 lettres
+const PLATE_REGEX = /^[A-Z]{2}-?\d{3,4}-?[A-Z]{2}$/i;
 
 export type VehiculeType = "auto" | "moto";
 
 export function normalizeImmatriculation(raw: string): string {
   const cleaned = raw.replace(/\s+/g, "").toUpperCase();
-  const match = cleaned.match(/^([A-Z]{2})-?(\d{3})-?([A-Z]{2})$/);
+  const match = cleaned.match(/^([A-Z]{2})-?(\d{3,4})-?([A-Z]{2})$/);
   if (!match) return cleaned;
   return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+export function formatImmatriculation(raw: string): string {
+  return normalizeImmatriculation(raw);
 }
 
 export function isValidImmatriculation(raw: string): boolean {

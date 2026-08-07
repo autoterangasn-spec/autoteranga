@@ -120,7 +120,7 @@ export function VehiculeForm() {
               <Input
                 id="immatriculation"
                 name="immatriculation"
-                placeholder="AA-617-SE"
+                placeholder="AA-617-SE ou DK-8967-BG"
                 required
                 disabled={isPending}
               />

@@ -130,7 +130,7 @@ export async function createVehicule(formData: FormData): Promise<ActionResult<V
   if (!isValidImmatriculation(rawImmat)) {
     return {
       error:
-        "Format d'immatriculation invalide. Exemple : AA-617-SE ou AA617SE.",
+        "Format d'immatriculation invalide. Exemple : AA-617-SE, AA617SE, DK-8967-BG ou DK8967BG.",
     };
   }
 

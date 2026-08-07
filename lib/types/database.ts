@@ -25,7 +25,18 @@ export interface Profile {
 
 export type VehiculeType = "auto" | "moto";
 
-export type FormuleAssurance = "tiers" | "tiers_plus" | "tous_risques";
+export type FormuleAssurance =
+  | "pack_1"
+  | "pack_2"
+  | "pack_3"
+  | "pack_4"
+  | "tr_franchise_250k"
+  | "tr_franchise_150k"
+  | "tr_franchise_100k"
+  | "tr_franchise_50k"
+  | "tiers"
+  | "tiers_plus"
+  | "tous_risques";
 export type DevisStatut =
   | "brouillon"
   | "envoye"

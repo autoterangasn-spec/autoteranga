@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 
-import { calculerPrime, type FormuleAssurance } from "@/lib/askia-tarifs";
+import {
+  calculerPrime,
+  calculerPrimeDetail,
+  isFormuleAssurance,
+  type FormuleAssurance,
+  type PrimeDetail,
+} from "@/lib/askia-tarifs";
 import { createClient } from "@/lib/supabase/server";
 import { getProfileForAuthUser } from "@/lib/supabase/profile";
 import type { DevisAssurance, DevisWithVehicule, Vehicule } from "@/lib/types/database";
@@ -128,10 +134,22 @@ export async function getVehiculeForDevis(
   return { data: vehicule, error: null };
 }
 
+function primeInputFromVehicule(
+  vehicule: Vehicule,
+  formule: FormuleAssurance
+) {
+  return {
+    type: vehicule.type as VehiculeType,
+    annee: vehicule.annee as number,
+    puissanceFiscale: vehicule.puissance_fiscale ?? undefined,
+    formule,
+  };
+}
+
 export async function previewPrime(
   vehiculeId: string,
   formule: FormuleAssurance
-): Promise<ActionResult<number>> {
+): Promise<ActionResult<PrimeDetail>> {
   const { supabase, profile, error } = await requireClientProfile();
   if (error || !profile) {
     return { error: error ?? "Profil introuvable." };
@@ -150,13 +168,9 @@ export async function previewPrime(
     return { error: "Année du véhicule manquante." };
   }
 
-  const prime = calculerPrime({
-    type: vehicule.type,
-    annee: vehicule.annee,
-    formule,
-  });
+  const detail = calculerPrimeDetail(primeInputFromVehicule(vehicule, formule));
 
-  return { data: prime, error: null };
+  return { data: detail, error: null };
 }
 
 export async function submitDevis(formData: FormData): Promise<ActionResult<DevisAssurance>> {
@@ -175,7 +189,7 @@ export async function submitDevis(formData: FormData): Promise<ActionResult<Devi
     return { error: "Véhicule requis." };
   }
 
-  if (!["tiers", "tiers_plus", "tous_risques"].includes(formule)) {
+  if (!isFormuleAssurance(formule)) {
     return { error: "Formule invalide." };
   }
 
@@ -232,11 +246,9 @@ export async function submitDevis(formData: FormData): Promise<ActionResult<Devi
     };
   }
 
-  const prime_calculee = calculerPrime({
-    type: vehicule.type as VehiculeType,
-    annee: vehicule.annee,
-    formule,
-  });
+  const prime_calculee = calculerPrime(
+    primeInputFromVehicule(vehicule, formule)
+  );
 
   const { data: inserted, error: insertError } = await supabase
     .from("devis_assurance")

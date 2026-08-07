@@ -25,8 +25,10 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
-  FORMULES_ASSURANCE,
+  ASKIA_PACKS,
+  getFormuleInfo,
   type FormuleAssurance,
+  type PrimeDetail,
 } from "@/lib/askia-tarifs";
 import type { DevisAssurance, Vehicule } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
@@ -46,7 +48,7 @@ const STEPS = [
 export function DevisWizard({ vehicule }: DevisWizardProps) {
   const [step, setStep] = useState(1);
   const [formule, setFormule] = useState<FormuleAssurance | null>(null);
-  const [prime, setPrime] = useState<number | null>(null);
+  const [primeDetail, setPrimeDetail] = useState<PrimeDetail | null>(null);
   const [carteGriseFile, setCarteGriseFile] = useState<File | null>(null);
   const [useExistingCarteGrise, setUseExistingCarteGrise] = useState(
     Boolean(vehicule.carte_grise_url)
@@ -64,7 +66,7 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
   function handleSelectFormule(selected: FormuleAssurance) {
     setFormule(selected);
     setError(null);
-    setPrime(null);
+    setPrimeDetail(null);
   }
 
   function handleNextFromFormule() {
@@ -80,7 +82,7 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
         setError(result.error ?? "Impossible de calculer la prime.");
         return;
       }
-      setPrime(result.data);
+      setPrimeDetail(result.data);
       setStep(2);
     });
   }
@@ -122,13 +124,12 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
       }
 
       setSubmittedDevis(result.data);
-      setPrime(result.data.prime_calculee);
       setStep(5);
     });
   }
 
   if (step === 5 && submittedDevis && formule) {
-    const formuleInfo = FORMULES_ASSURANCE.find((f) => f.id === formule)!;
+    const formuleInfo = getFormuleInfo(formule);
 
     return (
       <div className="mx-auto max-w-2xl space-y-6">
@@ -187,7 +188,7 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
       <div>
         <Button variant="ghost" size="sm" className="mb-4 -ml-2" asChild>
           <Link href="/client/vehicules">
@@ -204,6 +205,9 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
           {vehicule.annee ? ` (${vehicule.annee})` : ""}
           {vehicule.type
             ? ` · ${VEHICULE_TYPE_LABELS[vehicule.type]}`
+            : ""}
+          {vehicule.puissance_fiscale
+            ? ` · ${vehicule.puissance_fiscale} CV`
             : ""}
         </p>
       </div>
@@ -235,32 +239,38 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
       {step === 1 && (
         <section className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold">Choisissez votre formule</h2>
+            <h2 className="text-lg font-semibold">Choisissez votre PACK Askia</h2>
             <p className="text-sm text-muted-foreground">
-              Sélectionnez le niveau de couverture adapté à votre usage.
+              Formules alignées sur le barème Askia Assurances (tarification
+              calibrée sur police réelle).
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {FORMULES_ASSURANCE.map((f) => (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {ASKIA_PACKS.map((pack) => (
               <button
-                key={f.id}
+                key={pack.id}
                 type="button"
-                onClick={() => handleSelectFormule(f.id)}
+                onClick={() => handleSelectFormule(pack.id)}
                 className={`rounded-xl border p-4 text-left transition-colors hover:border-primary/50 ${
-                  formule === f.id
+                  formule === pack.id
                     ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                     : ""
                 }`}
               >
                 <div className="mb-2 flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">{f.label}</span>
+                  <Shield className="h-5 w-5 shrink-0 text-primary" />
+                  <div>
+                    <span className="font-semibold">{pack.shortLabel}</span>
+                    <p className="text-xs font-normal text-muted-foreground">
+                      {pack.label}
+                    </p>
+                  </div>
                 </div>
                 <p className="mb-3 text-xs text-muted-foreground">
-                  {f.description}
+                  {pack.description}
                 </p>
                 <ul className="space-y-1 text-xs">
-                  {f.garanties.map((g) => (
+                  {pack.garanties.map((g) => (
                     <li key={g} className="flex items-start gap-1">
                       <span className="text-primary">•</span>
                       {g}
@@ -283,28 +293,72 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
         </section>
       )}
 
-      {step === 2 && formule && (
+      {step === 2 && formule && primeDetail && (
         <section className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Prime estimée</CardTitle>
               <CardDescription>
-                Montant TTC calculé selon les tarifs Askia (estimation MVP).
+                Détail tarifaire Askia — {getFormuleInfo(formule).shortLabel}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="rounded-lg bg-muted/50 p-6 text-center">
                 <p className="text-sm text-muted-foreground">Prime TTC annuelle</p>
                 <p className="text-3xl font-bold text-primary">
-                  {prime != null ? formatCurrency(prime) : "—"}
+                  {formatCurrency(primeDetail.primeTtc)}
                 </p>
               </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Garanties souscrites</p>
+                <ul className="divide-y rounded-lg border text-sm">
+                  {primeDetail.lignes.map((ligne) => (
+                    <li
+                      key={ligne.id}
+                      className="flex justify-between px-3 py-2"
+                    >
+                      <span className="text-muted-foreground">{ligne.label}</span>
+                      <span>{formatCurrency(ligne.primeNette)}</span>
+                    </li>
+                  ))}
+                  <li className="flex justify-between px-3 py-2 font-medium">
+                    <span>Prime nette</span>
+                    <span>{formatCurrency(primeDetail.primeNette)}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
+                <p className="font-medium">Décomposition TTC</p>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Prime nette</span>
+                  <span>{formatCurrency(primeDetail.primeNette)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Accessoire</span>
+                  <span>{formatCurrency(primeDetail.accessoire)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">FGA</span>
+                  <span>{formatCurrency(primeDetail.fga)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">TCA (14 %)</span>
+                  <span>{formatCurrency(primeDetail.tca)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2 font-semibold">
+                  <span>Prime TTC</span>
+                  <span className="text-primary">
+                    {formatCurrency(primeDetail.primeTtc)}
+                  </span>
+                </div>
+              </div>
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Formule</span>
-                  <span>
-                    {FORMULES_ASSURANCE.find((f) => f.id === formule)?.label}
-                  </span>
+                  <span>{getFormuleInfo(formule).label}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Type</span>
@@ -318,10 +372,16 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
                   <span className="text-muted-foreground">Année</span>
                   <span>{vehicule.annee ?? "—"}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Puissance fiscale</span>
+                  <span>
+                    {vehicule.puissance_fiscale ?? "17 (estimée)"} CV
+                  </span>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Ce montant est indicatif. La prime définitive sera confirmée
-                par Askia Assurances lors de la souscription.
+                Montant indicatif calibré sur barème Askia. La prime définitive
+                sera confirmée lors de la souscription.
               </p>
             </CardContent>
           </Card>
@@ -414,7 +474,7 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
         </section>
       )}
 
-      {step === 4 && formule && (
+      {step === 4 && formule && primeDetail && (
         <section className="space-y-4">
           <Card>
             <CardHeader>
@@ -433,13 +493,13 @@ export function DevisWizard({ vehicule }: DevisWizardProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Formule</span>
-                <span>
-                  {FORMULES_ASSURANCE.find((f) => f.id === formule)?.label}
-                </span>
+                <span>{getFormuleInfo(formule).label}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Prime estimée TTC</span>
-                <span className="font-bold">{formatCurrency(prime)}</span>
+                <span className="font-bold">
+                  {formatCurrency(primeDetail.primeTtc)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Carte grise</span>
